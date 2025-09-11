@@ -44,12 +44,12 @@ export function PlayerList() {
           >
             <div
               className={`px-2 py-1 rounded-md truncate text-sm ${
-                u.ready
+                u.ready || gameStarted
                   ? "bg-emerald-100 text-emerald-700 font-semibold"
                   : "bg-gray-100 text-gray-700"
               }`}
             >
-              {u.ready && "✅"} {u.nick}
+              {(u.ready || gameStarted) && "✅"} {u.nick}
             </div>
             <Button
               variant={u.nick === me ? "secondary" : "ghost"}
