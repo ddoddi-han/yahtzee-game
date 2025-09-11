@@ -32,37 +32,35 @@ export function PlayerList() {
   };
 
   return (
-    <Card>
+    <Card className="flex flex-col min-h-0">
       <CardHeader>
         <CardTitle>참가자 {`(${users.length}명)`}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2.5">
-          {users.map((u, idx) => (
+      <CardContent className="flex-1 min-h-0 overflow-auto space-y-2.5">
+        {users.map((u, idx) => (
+          <div
+            key={u.nick + idx}
+            className="flex justify-between items-center gap-x-2"
+          >
             <div
-              key={u.nick + idx}
-              className="flex justify-between items-center gap-x-2"
+              className={`px-2 py-1 rounded-md truncate text-sm ${
+                u.ready
+                  ? "bg-emerald-100 text-emerald-700 font-semibold"
+                  : "bg-gray-100 text-gray-700"
+              }`}
             >
-              <div
-                className={`px-2 py-1 rounded-md truncate text-sm ${
-                  u.ready
-                    ? "bg-emerald-100 text-emerald-700 font-semibold"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {u.ready && "✅"} {u.nick}
-              </div>
-              <Button
-                variant={u.nick === me ? "secondary" : "ghost"}
-                onClick={toggleReady}
-                disabled={u.nick !== me || loading || gameStarted}
-              >
-                {u.ready || gameStarted ? <Pause /> : <Play />}
-                {u.ready || gameStarted ? "준비 취소" : "준비"}
-              </Button>
+              {u.ready && "✅"} {u.nick}
             </div>
-          ))}
-        </div>
+            <Button
+              variant={u.nick === me ? "secondary" : "ghost"}
+              onClick={toggleReady}
+              disabled={u.nick !== me || loading || gameStarted}
+            >
+              {u.ready || gameStarted ? <Pause /> : <Play />}
+              {u.ready || gameStarted ? "준비 취소" : "준비"}
+            </Button>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

@@ -92,11 +92,10 @@ export function setReady(roomId: string, nick: string, ready: boolean) {
   broadcastUsers(roomId);
 
   // 모두 ready인지 확인
-  if (
-    room.clients.size > 0 &&
-    [...room.clients].every((c) => c.ready) &&
-    !room.started
-  ) {
+  const allReady =
+    room.clients.size >= 2 && [...room.clients].every((c) => c.ready);
+
+  if (allReady && !room.started) {
     startCountdown(roomId);
   }
 }

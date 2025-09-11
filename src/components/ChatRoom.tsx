@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
   Card,
-  CardAction,
   CardContent,
   CardFooter,
   CardHeader,
@@ -12,12 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRouter } from "next/navigation";
 import { useRoom } from "@/contexts/RoomContext";
 
 export function ChatRoom() {
   const { roomId, nick, connected, messages } = useRoom();
-  const router = useRouter();
   const [text, setText] = React.useState("");
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
@@ -44,7 +41,7 @@ export function ChatRoom() {
   };
 
   return (
-    <Card className="w-full h-fit rounded-2xl shadow-lg">
+    <Card className="flex flex-col min-h-0">
       <CardHeader className="space-y-1 gap-x-4">
         <CardTitle className="text-xl flex items-center gap-x-2 truncate">
           <span
@@ -55,20 +52,9 @@ export function ChatRoom() {
           <span className="font-mono truncate">{roomId}</span>
         </CardTitle>
         <p className="text-sm text-muted-foreground truncate">닉네임: {nick}</p>
-        <CardAction>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              localStorage.removeItem("chat_nick");
-              router.push("/");
-            }}
-          >
-            나가기
-          </Button>
-        </CardAction>
       </CardHeader>
-      <CardContent className="border-t pt-4">
-        <ScrollArea className="h-[30vh] w-full rounded-md border p-3">
+      <CardContent className="flex-1 min-h-0 border-t pt-4">
+        <ScrollArea className="h-full w-full rounded-md border p-3">
           <ul className="space-y-2">
             {messages.map((m, i) => {
               const time = new Date(m.at).toLocaleTimeString();

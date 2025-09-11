@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "@/components/button/ModeToggle";
+import { toast } from "sonner";
 
 // zod 스키마 정의
 const formSchema = z.object({
@@ -43,14 +44,26 @@ export default function Page() {
     defaultValues: { nick: "", room: "" },
   });
 
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
     const nick = values.nick.trim();
     const room = values.room.trim();
 
-    // localStorage에 닉네임 저장 (방 이동 후 사용)
-    localStorage.setItem("chat_nick", nick);
+    // 서버에 방 상태 확인 요청
+    const res = await fetch("/api/check-room", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: room, nick }),
+    });
 
-    // 다이나믹 라우팅으로 이동
+    const result = await res.json();
+
+    if (!result.ok) {
+      toast.error(result.reason); // ❌ 이미 시작된 방이거나 닉네임 중복
+      return;
+    }
+
+    // ✅ 통과하면 localStorage에 저장 후 방 입장
+    localStorage.setItem("chat_nick", nick);
     router.push(`/${room}`);
   }
 

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChatRoom } from "@/components/ChatRoom";
 import { PlayerList } from "@/components/PlayerList";
 import { RoomProvider } from "@/contexts/RoomContext";
+import { Button } from "@/components/ui/button";
 // import { GameBoard } from "@/components/GameBoard"; // 나중에 붙일 예정
 
 type Message =
@@ -101,9 +102,20 @@ export default function RoomPage() {
         <div className="border rounded-lg">게임 보드 자리</div>
 
         {/* 채팅방 */}
-        <div className="flex flex-col gap-6">
-          <ChatRoom />
-          <PlayerList />
+        <div className="flex flex-col h-full min-h-0 gap-6">
+          <div className="grid grid-rows-[7fr_3fr] flex-1 min-h-0 gap-6">
+            <ChatRoom />
+            <PlayerList />
+          </div>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              localStorage.removeItem("chat_nick");
+              router.push("/");
+            }}
+          >
+            나가기
+          </Button>
         </div>
       </main>
     </RoomProvider>
