@@ -1,15 +1,11 @@
 "use client";
 
-import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-import { ChatRoom } from "@/components/ChatRoom";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { ModeToggle } from "@/components/button/ModeToggle";
 
 // zod 스키마 정의
 const formSchema = z.object({
@@ -59,6 +56,7 @@ export default function Page() {
 
   return (
     <main className="grid place-items-center h-full">
+      <ModeToggle />
       <Card className="w-full max-w-md rounded-2xl shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl">🎲 Yahzee! - 방 입장</CardTitle>

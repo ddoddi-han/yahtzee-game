@@ -13,41 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
+import { useRoom } from "@/contexts/RoomContext";
 
-type Message =
-  | { type: "system"; text: string; at: number }
-  | { type: "chat"; nick: string; text: string; at: number };
-
-export function ChatRoom({ roomId, nick }: { roomId: string; nick: string }) {
+export function ChatRoom() {
+  const { roomId, nick, connected, messages } = useRoom();
   const router = useRouter();
-  const [connected, setConnected] = React.useState(false);
-  const [messages, setMessages] = React.useState<Message[]>([]);
   const [text, setText] = React.useState("");
   const bottomRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const url = `/api/sse?room=${encodeURIComponent(
-      roomId
-    )}&nick=${encodeURIComponent(nick)}`;
-    const es = new EventSource(url);
-
-    es.onopen = () => setConnected(true);
-    es.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(ev.data) as Message;
-        if (["system", "chat"].includes(data.type))
-          setMessages((prev) => [...prev, data]);
-      } catch {}
-    };
-    es.onerror = () => {
-      setConnected(false);
-      // 자동 재시도는 EventSource 기본 동작(약 3초)
-    };
-
-    return () => {
-      es.close();
-    };
-  }, [roomId, nick]);
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

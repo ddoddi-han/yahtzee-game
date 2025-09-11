@@ -1,4 +1,9 @@
-import { addClient, broadcast, removeClient } from "@/lib/roomBus";
+import {
+  addClient,
+  broadcast,
+  getRoomState,
+  removeClient,
+} from "@/lib/roomBus";
 
 export const runtime = "nodejs";
 
@@ -15,7 +20,7 @@ export async function GET(req: Request) {
     start(controller) {
       const id = crypto.randomUUID();
 
-      addClient(room, { id, nick, controller });
+      addClient(room, { id, nick, ready: false, controller });
 
       // 입장 시스템 메시지 브로드캐스트
       broadcast(room, {
@@ -24,8 +29,31 @@ export async function GET(req: Request) {
         at: Date.now(),
       });
 
-      // SSE keep-alive/heartbeat
+      // 접속한 유저에게 현재 방 상태를 즉시 내려줌
+      const state = getRoomState(room);
       const enc = new TextEncoder();
+
+      const users = [...state.clients].map((c) => ({
+        nick: c.nick,
+        ready: c.ready,
+      }));
+
+      controller.enqueue(
+        enc.encode(`data: ${JSON.stringify({ type: "users", users })}\n\n`)
+      );
+
+      controller.enqueue(
+        enc.encode(
+          `data: ${JSON.stringify({
+            type: "game",
+            event: "state",
+            started: state.started,
+            countdown: state.countdown,
+          })}\n\n`
+        )
+      );
+
+      // SSE keep-alive/heartbeat
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(enc.encode(`: ping\n\n`));
