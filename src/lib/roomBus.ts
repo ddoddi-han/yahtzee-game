@@ -32,10 +32,32 @@ export const rooms: RoomMap = g.__rooms__;
 const enc = new TextEncoder();
 
 export function addClient(roomId: string, client: Client) {
-  if (!rooms.has(roomId)) {
-    rooms.set(roomId, { clients: new Set(), started: false, countdown: null });
+  let room = rooms.get(roomId);
+
+  if (!room) {
+    room = { clients: new Set(), started: false, countdown: null };
+    rooms.set(roomId, room);
   }
-  rooms.get(roomId)!.clients.add(client);
+
+  // 동일 nick 존재 시 이전 연결 제거
+  const existing = [...room.clients].find((c) => c.nick === client.nick);
+  if (existing) {
+    try {
+      existing.controller.enqueue(
+        enc.encode(
+          `data: ${JSON.stringify({
+            type: "force-exit",
+            reason: "duplicate",
+          })}\n\n`
+        )
+      );
+      existing.controller.close();
+    } catch {}
+    room.clients.delete(existing);
+    client.ready = existing.ready; // ready 상태는 복사
+  }
+
+  room.clients.add(client);
 
   broadcastUsers(roomId);
   broadcastGameState(roomId);

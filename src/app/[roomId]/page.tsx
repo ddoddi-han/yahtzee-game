@@ -6,6 +6,7 @@ import { ChatRoom } from "@/components/ChatRoom";
 import { PlayerList } from "@/components/PlayerList";
 import { RoomProvider } from "@/contexts/RoomContext";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 // import { GameBoard } from "@/components/GameBoard"; // 나중에 붙일 예정
 
 type Message =
@@ -17,7 +18,8 @@ type Message =
       event: "start-countdown" | "start" | "state";
       started?: boolean;
       countdown?: number | null;
-    };
+    }
+  | { type: "force-exit"; reason: string };
 
 export type ChatMessage = {
   type: "system" | "chat";
@@ -60,6 +62,13 @@ export default function RoomPage() {
     es.onmessage = (ev) => {
       try {
         const data = JSON.parse(ev.data) as Message;
+        if (data.type === "force-exit") {
+          toast.error("다른 탭에서 접속하여 연결이 종료되었습니다.");
+          router.push("/");
+          es.close();
+          return;
+        }
+
         if (data.type === "users") {
           setUsers(data.users);
         } else if (data.type === "game") {

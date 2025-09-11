@@ -72,7 +72,7 @@ export default function Page() {
       <ModeToggle />
       <Card className="w-full max-w-md rounded-2xl shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl">🎲 Yahzee! - 방 입장</CardTitle>
+          <CardTitle className="text-xl">🎲 Yathzee! - 방 입장</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
