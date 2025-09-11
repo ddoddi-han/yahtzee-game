@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -42,7 +43,7 @@ export function ChatRoom() {
 
   return (
     <Card className="flex flex-col min-h-0">
-      <CardHeader className="space-y-1 gap-x-4">
+      <CardHeader className="gap-x-4">
         <CardTitle className="text-xl flex items-center gap-x-2 truncate">
           <span
             className={`inline-block h-2 w-2 min-w-2 rounded-full ${
@@ -51,9 +52,9 @@ export function ChatRoom() {
           />
           <span className="font-mono truncate">{roomId}</span>
         </CardTitle>
-        <p className="text-sm text-muted-foreground truncate">닉네임: {nick}</p>
+        <CardDescription>닉네임: {nick}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 border-t pt-4">
+      <CardContent className="flex-1 min-h-0 border-t pt-6">
         <ScrollArea className="h-full w-full rounded-md border p-3">
           <ul className="space-y-2">
             {messages.map((m, i) => {

@@ -7,6 +7,7 @@ import { PlayerList } from "@/components/PlayerList";
 import { RoomProvider } from "@/contexts/RoomContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { GameBoard } from "@/components/GameBoard";
 // import { GameBoard } from "@/components/GameBoard"; // 나중에 붙일 예정
 
 type Message =
@@ -106,11 +107,8 @@ export default function RoomPage() {
       }}
     >
       <main className="grid grid-cols-[7fr_3fr] h-full gap-6 p-4 md:p-8">
-        {/* 나중에 야추 게임판 UI 붙일 곳 */}
-        {/* <GameBoard roomId={roomId} nick={nick} /> */}
-        <div className="border rounded-lg">게임 보드 자리</div>
+        <GameBoard />
 
-        {/* 채팅방 */}
         <div className="flex flex-col h-full min-h-0 gap-6">
           <div className="grid grid-rows-[7fr_3fr] flex-1 min-h-0 gap-6">
             <ChatRoom />
