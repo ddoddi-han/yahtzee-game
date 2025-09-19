@@ -2,64 +2,68 @@
 
 import { useRoom } from "@/contexts/RoomContext";
 
-import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { ScoreTable } from "./ScoreTable";
 import { Dices } from "lucide-react";
 import { toast } from "sonner";
 
-export type TDice = { value: number | null; held: boolean };
-
 export function GameBoard() {
-  const { gameStarted, countdown, users, nick, scores, turnIndex, roomId } =
-    useRoom();
-
-  const [dice, setDice] = React.useState<TDice[]>(
-    Array(5)
-      .fill(null)
-      .map(() => ({ value: null, held: false }))
-  );
-  const [rollsLeft, setRollsLeft] = React.useState(3);
+  const {
+    gameStarted,
+    countdown,
+    users,
+    nick,
+    scores,
+    turnIndex,
+    roomId,
+    dice,
+    rollsLeft,
+  } = useRoom();
 
   const turnPlayer = users[turnIndex % users.length]?.nick;
 
-  function rollDice() {
-    if (rollsLeft <= 0) return;
-    setDice((prev) =>
-      prev.map((d) =>
-        d.held ? d : { ...d, value: Math.ceil(Math.random() * 6) }
-      )
-    );
-    setRollsLeft((prev) => prev - 1);
+  async function rollDice() {
+    try {
+      await fetch("/api/game/roll-dice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId, nick }),
+      });
+    } catch (err) {
+      console.error("주사위 굴리기 실패:", err);
+      toast.error("주사위 굴리기에 실패했습니다.");
+    }
   }
 
-  function toggleHold(index: number) {
-    setDice((prev) =>
-      prev.map((d, i) => (i === index ? { ...d, held: !d.held } : d))
-    );
+  async function toggleHold(index: number) {
+    try {
+      await fetch("/api/game/hold-dice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId, nick, index }),
+      });
+    } catch (err) {
+      console.error("주사위 고정/해제 실패:", err);
+      toast.error("주사위 고정/해제에 실패했습니다.");
+    }
   }
 
-  // 점수 선택 후 서버에 반영
   const handleUpdateScores = async (
-    newScores: Record<string, number | null>
+    newScores: Record<string, number | null>,
+    category: string
   ) => {
     try {
-      await fetch("/api/select-score", {
+      await fetch("/api/game/select-score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           roomId,
           nick,
-          scores: newScores, // 내 점수판만
+          scores: newScores,
+          lastSelected: category,
         }),
       });
-      setDice(
-        Array(5)
-          .fill(null)
-          .map(() => ({ value: null, held: false }))
-      );
-      setRollsLeft(3);
     } catch (err) {
       console.error("점수 업데이트 실패:", err);
       toast.error("점수 업데이트에 실패했습니다.");

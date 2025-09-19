@@ -28,6 +28,9 @@ export default function RoomPage() {
   const [scores, setScores] = React.useState<RoomContextType["scores"]>({});
   const [turnIndex, setTurnIndex] =
     React.useState<RoomContextType["turnIndex"]>(0);
+  const [dice, setDice] = React.useState<RoomContextType["dice"]>([]);
+  const [rollsLeft, setRollsLeft] =
+    React.useState<RoomContextType["rollsLeft"]>(3);
 
   React.useEffect(() => {
     const savedNick = localStorage.getItem("chat_nick");
@@ -66,6 +69,8 @@ export default function RoomPage() {
             setCountdown(data.countdown ?? null);
             setScores(data.scores ?? {});
             setTurnIndex(data.turnIndex ?? 0);
+            setDice(data.dice ?? []);
+            setRollsLeft(data.rollsLeft ?? 3);
           } else if (data.event === "start-countdown") {
             setCountdown(data.countdown ?? null);
           } else if (data.event === "start") {
@@ -73,10 +78,24 @@ export default function RoomPage() {
             setCountdown(null);
           } else if (data.event === "update-scores") {
             setScores(data.scores ?? {});
-            toast.success("점수가 업데이트 되었습니다!");
+
+            if (data.lastSelected === "보너스 (+35)") {
+              toast.success(
+                `🎉 ${users[turnIndex]}님이 ${data.lastSelected} 숙제를 완료했습니다. 🎉`
+              );
+            } else {
+              toast.success(
+                `${users[turnIndex]}님이 ${data.lastSelected}를 선택했습니다.`
+              );
+            }
           } else if (data.event === "update-turn") {
             setTurnIndex(data.turnIndex ?? 0);
-            toast.info("턴이 넘어갔습니다!");
+            setDice(data.dice ?? []);
+            setRollsLeft(data.rollsLeft ?? 3);
+
+            const nextPlayer =
+              users[(data.turnIndex ?? 0) % users.length]?.nick;
+            toast.info(`${nextPlayer}님의 턴입니다.`);
           }
         } else {
           setMessages((prev) => [...prev, data]);
@@ -102,6 +121,8 @@ export default function RoomPage() {
         countdown,
         scores,
         turnIndex,
+        dice,
+        rollsLeft,
       }}
     >
       <main className="grid grid-cols-[7fr_3fr] h-full gap-6 p-4 md:p-8">

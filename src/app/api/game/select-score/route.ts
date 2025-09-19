@@ -5,19 +5,20 @@ type SelectScoreRequest = {
   roomId: string;
   nick: string;
   scores: Record<string, number | null>;
+  lastSelected: string;
 };
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as SelectScoreRequest;
-    const { roomId, nick, scores } = body;
+    const { roomId, nick, scores, lastSelected } = body;
 
     if (!roomId || !nick || !scores) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
     // 점수 업데이트
-    updateScores(roomId, nick, scores);
+    updateScores(roomId, nick, scores, lastSelected);
 
     // 턴 전환
     nextTurn(roomId);

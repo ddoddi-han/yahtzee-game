@@ -1,3 +1,5 @@
+export type TDice = { value: number | null; held: boolean };
+
 export type ServerMessage =
   | { type: "system"; text: string; at: number }
   | { type: "chat"; nick: string; text: string; at: number }
@@ -14,6 +16,9 @@ export type ServerMessage =
       countdown?: number | null;
       turnIndex?: number;
       scores?: Record<string, Record<string, number | null>>;
+      dice?: TDice[];
+      rollsLeft?: number;
+      lastSelected?: string;
     }
   | { type: "force-exit"; reason: string };
 
@@ -30,6 +35,8 @@ type RoomState = {
   countdown: number | null;
   turnIndex: number;
   scores: Record<string, Record<string, number | null>>;
+  dice: TDice[];
+  rollsLeft: number;
 };
 
 type RoomMap = Map<string, RoomState>;
@@ -41,6 +48,12 @@ export const rooms: RoomMap = g.__rooms__;
 
 const enc = new TextEncoder();
 
+function createInitialDice() {
+  return Array(5)
+    .fill(null)
+    .map(() => ({ value: null, held: false }));
+}
+
 export function addClient(roomId: string, client: Client) {
   let room = rooms.get(roomId);
 
@@ -51,6 +64,8 @@ export function addClient(roomId: string, client: Client) {
       countdown: null,
       turnIndex: 0,
       scores: {},
+      dice: createInitialDice(),
+      rollsLeft: 3,
     };
     rooms.set(roomId, room);
   }
@@ -137,6 +152,8 @@ export function getRoomState(roomId: string): RoomState {
       countdown: null,
       turnIndex: 0,
       scores: {},
+      dice: createInitialDice(),
+      rollsLeft: 3,
     };
     rooms.set(roomId, room);
   }
@@ -165,7 +182,8 @@ export function setReady(roomId: string, nick: string, ready: boolean) {
 export function updateScores(
   roomId: string,
   nick: string,
-  scores: Record<string, number | null>
+  scores: Record<string, number | null>,
+  lastSelected?: string
 ) {
   const room = rooms.get(roomId);
   if (!room) return;
@@ -175,6 +193,7 @@ export function updateScores(
     type: "game",
     event: "update-scores",
     scores: room.scores,
+    lastSelected,
   });
   broadcastGameState(roomId);
 }
@@ -182,12 +201,17 @@ export function updateScores(
 export function nextTurn(roomId: string) {
   const room = rooms.get(roomId);
   if (!room) return;
+
   room.turnIndex = (room.turnIndex + 1) % room.clients.size;
+  room.rollsLeft = 3;
+  room.dice = createInitialDice();
 
   broadcast(roomId, {
     type: "game",
     event: "update-turn",
     turnIndex: room.turnIndex,
+    dice: room.dice,
+    rollsLeft: room.rollsLeft,
   });
   broadcastGameState(roomId);
 }
@@ -212,6 +236,8 @@ function broadcastGameState(roomId: string) {
     countdown: room.countdown,
     turnIndex: room.turnIndex,
     scores: room.scores,
+    dice: room.dice,
+    rollsLeft: room.rollsLeft,
   });
 }
 

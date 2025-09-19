@@ -3,12 +3,15 @@
 import * as React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableRow } from "./ui/table";
-import { TDice } from "./GameBoard";
+import { TDice } from "@/lib/roomBus";
 
 interface ScoreTableProps {
   scores: Record<string, number | null>;
   dice: TDice["value"][];
-  onUpdate: (newScores: Record<string, number | null>) => void;
+  onUpdate: (
+    newScores: Record<string, number | null>,
+    category: string
+  ) => void;
   disabled: boolean;
 }
 
@@ -29,6 +32,13 @@ const lowerCategories = [
   { key: "Chance", label: "Chance" },
   { key: "Yahtzee", label: "Yahtzee" },
 ];
+
+const getLabel = (category: string) => {
+  return (
+    [...upperCategories, ...lowerCategories].find((c) => c.key === category)
+      ?.label ?? category
+  );
+};
 
 // 점수 계산 로직
 function calculateScore(key: string, dice: (number | null)[]): number {
@@ -127,7 +137,7 @@ export function ScoreTable({
 
   React.useEffect(() => {
     if (scores.Bonus !== bonus) {
-      onUpdate({ ...scores, Bonus: bonus });
+      onUpdate({ ...scores, Bonus: bonus }, "보너스 (+35)");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upperTotal, bonus]);
@@ -142,11 +152,11 @@ export function ScoreTable({
 
   const totalSum = upperTotal + bonus + lowerTotal;
 
-  const handleSelect = (key: string) => {
-    if (key === "Bonus") return;
-    if (scores[key] !== null) return;
-    const newScore = predicted[key] ?? 0;
-    onUpdate({ ...scores, [key]: newScore });
+  const handleSelect = (category: string) => {
+    if (category === "Bonus") return;
+    if (scores[category] !== null) return;
+    const newScore = predicted[category] ?? 0;
+    onUpdate({ ...scores, [category]: newScore }, getLabel(category));
   };
 
   const isRowDisabled = (key: string) => {
