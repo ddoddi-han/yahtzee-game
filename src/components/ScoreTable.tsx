@@ -153,6 +153,7 @@ export function ScoreTable({
     if (disabled) return true; // 내 턴 아님
     if (key === "Bonus") return true; // 자동 계산
     if (scores[key] !== null) return true; // 이미 채점됨
+    if (dice.some((d) => d === null)) return true; // 아직 안 굴림
     return false;
   };
 

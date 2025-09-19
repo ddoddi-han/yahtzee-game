@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { ScoreTable } from "./ScoreTable";
 import { Dices } from "lucide-react";
+import { toast } from "sonner";
 
 export type TDice = { value: number | null; held: boolean };
 
 export function GameBoard() {
-  const { gameStarted, countdown, users, nick } = useRoom();
+  const { gameStarted, countdown, users, nick, scores, turnIndex, roomId } =
+    useRoom();
 
   const [dice, setDice] = React.useState<TDice[]>(
     Array(5)
@@ -19,24 +21,7 @@ export function GameBoard() {
       .map(() => ({ value: null, held: false }))
   );
   const [rollsLeft, setRollsLeft] = React.useState(3);
-  const [scores, setScores] = React.useState<Record<string, number | null>>({
-    Ones: null,
-    Twos: null,
-    Threes: null,
-    Fours: null,
-    Fives: null,
-    Sixes: null,
-    Bonus: 0,
-    FourKind: null,
-    SmallStraight: null,
-    LargeStraight: null,
-    FullHouse: null,
-    Chance: null,
-    Yahtzee: null,
-  });
 
-  // 턴제 (간단히 순서 배열로)
-  const [turnIndex, setTurnIndex] = React.useState(0);
   const turnPlayer = users[turnIndex % users.length]?.nick;
 
   function rollDice() {
@@ -55,17 +40,30 @@ export function GameBoard() {
     );
   }
 
-  // 점수 선택 후 턴 넘기기
-  const handleUpdateScores = (newScores: Record<string, number | null>) => {
-    setScores(newScores);
-    // 턴 종료 → 주사위 리셋 + 롤 횟수 초기화
-    setTurnIndex((i) => i + 1);
-    setDice(
-      Array(5)
-        .fill(null)
-        .map(() => ({ value: null, held: false }))
-    );
-    setRollsLeft(3);
+  // 점수 선택 후 서버에 반영
+  const handleUpdateScores = async (
+    newScores: Record<string, number | null>
+  ) => {
+    try {
+      await fetch("/api/select-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomId,
+          nick,
+          scores: newScores, // 내 점수판만
+        }),
+      });
+      setDice(
+        Array(5)
+          .fill(null)
+          .map(() => ({ value: null, held: false }))
+      );
+      setRollsLeft(3);
+    } catch (err) {
+      console.error("점수 업데이트 실패:", err);
+      toast.error("점수 업데이트에 실패했습니다.");
+    }
   };
 
   return (
@@ -126,7 +124,7 @@ export function GameBoard() {
             {/* 점수판 */}
             <div className="flex-1 overflow-auto border rounded-lg p-2">
               <ScoreTable
-                scores={scores}
+                scores={scores[nick] ?? {}}
                 dice={dice.map((d) => d.value)}
                 onUpdate={handleUpdateScores}
                 disabled={turnPlayer !== nick}

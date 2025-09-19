@@ -1,13 +1,21 @@
-type ServerMessage =
+export type ServerMessage =
   | { type: "system"; text: string; at: number }
   | { type: "chat"; nick: string; text: string; at: number }
   | { type: "users"; users: { nick: string; ready: boolean }[] }
   | {
       type: "game";
-      event: "start-countdown" | "start" | "state";
+      event:
+        | "start-countdown"
+        | "start"
+        | "state"
+        | "update-scores"
+        | "update-turn";
       started?: boolean;
       countdown?: number | null;
-    };
+      turnIndex?: number;
+      scores?: Record<string, Record<string, number | null>>;
+    }
+  | { type: "force-exit"; reason: string };
 
 type Client = {
   id: string;
@@ -20,13 +28,15 @@ type RoomState = {
   clients: Set<Client>;
   started: boolean;
   countdown: number | null;
+  turnIndex: number;
+  scores: Record<string, Record<string, number | null>>;
 };
 
 type RoomMap = Map<string, RoomState>;
 
 // HMR/서버 재시작에도 글로벌로 보존
 const g = globalThis as any;
-if (!g.__rooms__) g.__rooms__ = new Map<string, Set<Client>>();
+if (!g.__rooms__) g.__rooms__ = new Map<string, RoomState>();
 export const rooms: RoomMap = g.__rooms__;
 
 const enc = new TextEncoder();
@@ -35,7 +45,13 @@ export function addClient(roomId: string, client: Client) {
   let room = rooms.get(roomId);
 
   if (!room) {
-    room = { clients: new Set(), started: false, countdown: null };
+    room = {
+      clients: new Set(),
+      started: false,
+      countdown: null,
+      turnIndex: 0,
+      scores: {},
+    };
     rooms.set(roomId, room);
   }
 
@@ -55,6 +71,25 @@ export function addClient(roomId: string, client: Client) {
     } catch {}
     room.clients.delete(existing);
     client.ready = existing.ready; // ready 상태는 복사
+  }
+
+  // 새로운 플레이어 점수판 초기화
+  if (!room.scores[client.nick]) {
+    room.scores[client.nick] = {
+      Ones: null,
+      Twos: null,
+      Threes: null,
+      Fours: null,
+      Fives: null,
+      Sixes: null,
+      Bonus: 0,
+      FourKind: null,
+      FullHouse: null,
+      SmallStraight: null,
+      LargeStraight: null,
+      Chance: null,
+      Yahtzee: null,
+    };
   }
 
   room.clients.add(client);
@@ -96,8 +131,13 @@ export function broadcast(roomId: string, msg: ServerMessage) {
 export function getRoomState(roomId: string): RoomState {
   let room = rooms.get(roomId);
   if (!room) {
-    // 없으면 새로 생성해서 반환
-    room = { clients: new Set(), started: false, countdown: null };
+    room = {
+      clients: new Set(),
+      started: false,
+      countdown: null,
+      turnIndex: 0,
+      scores: {},
+    };
     rooms.set(roomId, room);
   }
   return room;
@@ -122,6 +162,36 @@ export function setReady(roomId: string, nick: string, ready: boolean) {
   }
 }
 
+export function updateScores(
+  roomId: string,
+  nick: string,
+  scores: Record<string, number | null>
+) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  room.scores[nick] = scores;
+
+  broadcast(roomId, {
+    type: "game",
+    event: "update-scores",
+    scores: room.scores,
+  });
+  broadcastGameState(roomId);
+}
+
+export function nextTurn(roomId: string) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  room.turnIndex = (room.turnIndex + 1) % room.clients.size;
+
+  broadcast(roomId, {
+    type: "game",
+    event: "update-turn",
+    turnIndex: room.turnIndex,
+  });
+  broadcastGameState(roomId);
+}
+
 function broadcastUsers(roomId: string) {
   const room = rooms.get(roomId);
   if (!room) return;
@@ -140,6 +210,8 @@ function broadcastGameState(roomId: string) {
     event: "state",
     started: room.started,
     countdown: room.countdown,
+    turnIndex: room.turnIndex,
+    scores: room.scores,
   });
 }
 

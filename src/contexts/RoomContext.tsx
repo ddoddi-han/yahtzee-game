@@ -17,6 +17,8 @@ export type RoomContextType = {
   users: User[];
   gameStarted: boolean;
   countdown: number | null;
+  scores: Record<string, Record<string, number | null>>;
+  turnIndex: number;
 };
 
 const RoomContext = React.createContext<RoomContextType | null>(null);
