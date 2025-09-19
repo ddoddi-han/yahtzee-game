@@ -67,10 +67,10 @@ export default function RoomPage() {
           if (data.event === "state") {
             setGameStarted(!!data.started);
             setCountdown(data.countdown ?? null);
-            setScores(data.scores ?? {});
-            setTurnIndex(data.turnIndex ?? 0);
-            setDice(data.dice ?? []);
-            setRollsLeft(data.rollsLeft ?? 3);
+            if (data.scores) setScores(data.scores);
+            if (data.turnIndex) setTurnIndex(data.turnIndex);
+            if (data.dice) setDice(data.dice);
+            if (data.rollsLeft) setRollsLeft(data.rollsLeft);
           } else if (data.event === "start-countdown") {
             setCountdown(data.countdown ?? null);
           } else if (data.event === "start") {
@@ -79,23 +79,25 @@ export default function RoomPage() {
           } else if (data.event === "update-scores") {
             setScores(data.scores ?? {});
 
-            if (data.lastSelected === "보너스 (+35)") {
-              toast.success(
-                `🎉 ${users[turnIndex]}님이 ${data.lastSelected} 숙제를 완료했습니다. 🎉`
-              );
-            } else {
-              toast.success(
-                `${users[turnIndex]}님이 ${data.lastSelected}를 선택했습니다.`
-              );
+            if (data.nick && data.lastSelected) {
+              if (data.lastSelected === "보너스 (+35)") {
+                toast.success(
+                  `🎉 ${data.nick}님이 ${data.lastSelected}를 달성했습니다!`
+                );
+              } else {
+                toast.success(
+                  `${data.nick}님이 ${data.lastSelected}를 선택했습니다.`
+                );
+              }
             }
           } else if (data.event === "update-turn") {
-            setTurnIndex(data.turnIndex ?? 0);
-            setDice(data.dice ?? []);
-            setRollsLeft(data.rollsLeft ?? 3);
-
-            const nextPlayer =
-              users[(data.turnIndex ?? 0) % users.length]?.nick;
-            toast.info(`${nextPlayer}님의 턴입니다.`);
+            if (data.turnIndex) {
+              setTurnIndex(data.turnIndex);
+              const nextPlayer = users[data.turnIndex % users.length]?.nick;
+              toast.info(`${nextPlayer}님의 턴입니다.`);
+            }
+            if (data.dice) setDice(data.dice);
+            if (data.rollsLeft) setRollsLeft(data.rollsLeft);
           }
         } else {
           setMessages((prev) => [...prev, data]);

@@ -117,12 +117,13 @@ export function GameBoard() {
               </div>
 
               {/* Roll 버튼 */}
-              {turnPlayer === nick && (
-                <Button onClick={rollDice} disabled={rollsLeft === 0}>
-                  <Dices />
-                  주사위 굴리기 ({rollsLeft})
-                </Button>
-              )}
+              <Button
+                onClick={rollDice}
+                disabled={rollsLeft === 0 || turnPlayer !== nick}
+              >
+                <Dices />
+                주사위 굴리기 ({rollsLeft})
+              </Button>
             </div>
 
             {/* 점수판 */}

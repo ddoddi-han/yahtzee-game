@@ -19,6 +19,7 @@ export type ServerMessage =
       dice?: TDice[];
       rollsLeft?: number;
       lastSelected?: string;
+      nick?: string;
     }
   | { type: "force-exit"; reason: string };
 
@@ -110,7 +111,24 @@ export function addClient(roomId: string, client: Client) {
   room.clients.add(client);
 
   broadcastUsers(roomId);
-  broadcastGameState(roomId);
+
+  // ✅ 새로 들어온 유저한테만 현재 상태 전송
+  try {
+    client.controller.enqueue(
+      enc.encode(
+        `data: ${JSON.stringify({
+          type: "game",
+          event: "state",
+          started: room.started,
+          countdown: room.countdown,
+          turnIndex: room.turnIndex,
+          scores: room.scores,
+          dice: room.dice,
+          rollsLeft: room.rollsLeft,
+        })}\n\n`
+      )
+    );
+  } catch {}
 }
 
 export function removeClient(roomId: string, clientId: string) {
@@ -183,7 +201,7 @@ export function updateScores(
   roomId: string,
   nick: string,
   scores: Record<string, number | null>,
-  lastSelected?: string
+  lastSelected: string
 ) {
   const room = rooms.get(roomId);
   if (!room) return;
@@ -193,6 +211,7 @@ export function updateScores(
     type: "game",
     event: "update-scores",
     scores: room.scores,
+    nick,
     lastSelected,
   });
   broadcastGameState(roomId);
