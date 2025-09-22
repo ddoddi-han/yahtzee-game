@@ -3,10 +3,9 @@
 import { useRoom } from "@/contexts/RoomContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
 import { ScoreTable } from "./ScoreTable";
-import { Dices } from "lucide-react";
 import { toast } from "sonner";
+import { Dice } from "./button/Dice";
 
 export function GameBoard() {
   const {
@@ -22,32 +21,7 @@ export function GameBoard() {
   } = useRoom();
 
   const turnPlayer = users[turnIndex % users.length]?.nick;
-
-  async function rollDice() {
-    try {
-      await fetch("/api/game/roll-dice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, nick }),
-      });
-    } catch (err) {
-      console.error("주사위 굴리기 실패:", err);
-      toast.error("주사위 굴리기에 실패했습니다.");
-    }
-  }
-
-  async function toggleHold(index: number) {
-    try {
-      await fetch("/api/game/hold-dice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, nick, index }),
-      });
-    } catch (err) {
-      console.error("주사위 고정/해제 실패:", err);
-      toast.error("주사위 고정/해제에 실패했습니다.");
-    }
-  }
+  const notMyTurn = turnPlayer !== nick;
 
   const handleUpdateScores = async (
     newScores: Record<string, number | null>,
@@ -84,7 +58,7 @@ export function GameBoard() {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 space-y-4">
+      <CardContent className="flex-1 space-y-6">
         {!gameStarted ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-2xl">
             {countdown !== null ? (
@@ -99,42 +73,15 @@ export function GameBoard() {
         ) : (
           <>
             {/* 주사위 */}
-            <div className="flex justify-between items-center">
-              <div className="flex gap-3">
-                {dice.map((d, i) => (
-                  <Button
-                    variant={"outline"}
-                    key={i}
-                    disabled={rollsLeft === 3}
-                    onClick={() => toggleHold(i)}
-                    className={`w-12 h-12 text-xl ${
-                      d.held ? "!bg-muted-foreground" : ""
-                    }`}
-                  >
-                    {d.value}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Roll 버튼 */}
-              <Button
-                onClick={rollDice}
-                disabled={rollsLeft === 0 || turnPlayer !== nick}
-              >
-                <Dices />
-                주사위 굴리기 ({rollsLeft})
-              </Button>
-            </div>
+            <Dice disabled={rollsLeft === 0 || notMyTurn} />
 
             {/* 점수판 */}
-            <div className="flex-1 overflow-auto border rounded-lg p-2">
-              <ScoreTable
-                scores={scores[nick] ?? {}}
-                dice={dice.map((d) => d.value)}
-                onUpdate={handleUpdateScores}
-                disabled={turnPlayer !== nick}
-              />
-            </div>
+            <ScoreTable
+              scores={scores[turnPlayer]}
+              dice={dice.map((d) => d.value)}
+              onUpdate={handleUpdateScores}
+              disabled={notMyTurn}
+            />
           </>
         )}
       </CardContent>

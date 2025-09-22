@@ -1,9 +1,7 @@
 "use client";
 
-import { TDice } from "@/lib/roomBus";
+import { TDice, TUsers } from "@/lib/roomBus";
 import * as React from "react";
-
-type User = { nick: string; ready: boolean };
 
 export type RoomContextType = {
   roomId: string;
@@ -15,7 +13,7 @@ export type RoomContextType = {
     nick?: string;
     at: number;
   }[];
-  users: User[];
+  users: TUsers;
   gameStarted: boolean;
   countdown: number | null;
   scores: Record<string, Record<string, number | null>>;

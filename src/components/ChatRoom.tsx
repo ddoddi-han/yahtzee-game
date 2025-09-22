@@ -86,7 +86,7 @@ export function ChatRoom() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="메시지를 입력하고 Enter…"
-          className="flex-1"
+          className="flex-1 truncate"
         />
         <Button onClick={send}>보내기</Button>
       </CardFooter>

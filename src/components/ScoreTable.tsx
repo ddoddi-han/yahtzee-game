@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableRow } from "./ui/table";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
 import { TDice } from "@/lib/roomBus";
 
 interface ScoreTableProps {
@@ -215,35 +223,37 @@ export function ScoreTable({
   };
 
   return (
-    <Table className="w-full text-sm">
-      <TableBody>
-        {/* Upper Section */}
-        {upperCategories.map((cat) =>
-          renderRow(cat.key, cat.label, scores[cat.key])
-        )}
-        {renderRow("Bonus", "보너스 (+35)", bonus, { auto: true })}
-        <TableRow className="font-semibold bg-muted">
-          <TableCell>상단 합계</TableCell>
-          <TableCell className="text-right">{upperTotal + bonus}</TableCell>
-        </TableRow>
+    <div className="flex-1 overflow-auto border rounded-lg p-2">
+      <Table className="w-full text-sm">
+        <TableBody>
+          {/* Upper Section */}
+          {upperCategories.map((cat) =>
+            renderRow(cat.key, cat.label, scores[cat.key])
+          )}
+          {renderRow("Bonus", "보너스 (+35)", bonus, { auto: true })}
+          <TableRow className="font-semibold bg-muted">
+            <TableCell>상단 합계</TableCell>
+            <TableCell className="text-right">{upperTotal + bonus}</TableCell>
+          </TableRow>
 
-        <TableRow className="h-9"></TableRow>
+          <TableRow className="h-9"></TableRow>
 
-        {/* Lower Section */}
-        {lowerCategories.map((cat) =>
-          renderRow(cat.key, cat.label, scores[cat.key])
-        )}
-        <TableRow className="font-semibold bg-muted">
-          <TableCell>하단 합계</TableCell>
-          <TableCell className="text-right">{lowerTotal}</TableCell>
-        </TableRow>
+          {/* Lower Section */}
+          {lowerCategories.map((cat) =>
+            renderRow(cat.key, cat.label, scores[cat.key])
+          )}
+          <TableRow className="font-semibold bg-muted">
+            <TableCell>하단 합계</TableCell>
+            <TableCell className="text-right">{lowerTotal}</TableCell>
+          </TableRow>
 
-        {/* Total */}
-        <TableRow className="font-bold bg-accent">
-          <TableCell>총합</TableCell>
-          <TableCell className="text-right">{totalSum}</TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
+          {/* Total */}
+          <TableRow className="font-bold bg-accent">
+            <TableCell>총합</TableCell>
+            <TableCell className="text-right">{totalSum}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
   );
 }

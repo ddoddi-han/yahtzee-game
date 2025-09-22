@@ -64,40 +64,46 @@ export default function RoomPage() {
         if (data.type === "users") {
           setUsers(data.users);
         } else if (data.type === "game") {
+          // 게임 상태
           if (data.event === "state") {
-            setGameStarted(!!data.started);
-            setCountdown(data.countdown ?? null);
-            if (data.scores) setScores(data.scores);
-            if (data.turnIndex) setTurnIndex(data.turnIndex);
-            if (data.dice) setDice(data.dice);
-            if (data.rollsLeft) setRollsLeft(data.rollsLeft);
-          } else if (data.event === "start-countdown") {
-            setCountdown(data.countdown ?? null);
-          } else if (data.event === "start") {
+            const { started, countdown, turnIndex, scores, dice, rollsLeft } =
+              data;
+
+            if (started !== undefined) setGameStarted(started);
+            if (countdown !== undefined) setCountdown(countdown);
+            if (turnIndex !== undefined) setTurnIndex(turnIndex);
+            if (scores !== undefined) setScores(scores);
+            if (dice?.length) setDice(dice);
+            if (rollsLeft !== undefined) setRollsLeft(rollsLeft);
+          }
+          // 게임 시작 카운트다운
+          else if (data.event === "start-countdown") {
+            const { countdown } = data;
+
+            if (countdown !== undefined) setCountdown(countdown);
+          }
+          // 게임 시작
+          else if (data.event === "start") {
             setGameStarted(true);
             setCountdown(null);
-          } else if (data.event === "update-scores") {
-            setScores(data.scores ?? {});
+          }
+          // 점수 업데이트
+          else if (data.event === "update-scores") {
+            const { scores, nick, lastSelected } = data;
 
-            if (data.nick && data.lastSelected) {
-              if (data.lastSelected === "보너스 (+35)") {
-                toast.success(
-                  `🎉 ${data.nick}님이 ${data.lastSelected}를 달성했습니다!`
-                );
-              } else {
-                toast.success(
-                  `${data.nick}님이 ${data.lastSelected}를 선택했습니다.`
-                );
-              }
-            }
-          } else if (data.event === "update-turn") {
-            if (data.turnIndex) {
-              setTurnIndex(data.turnIndex);
-              const nextPlayer = users[data.turnIndex % users.length]?.nick;
-              toast.info(`${nextPlayer}님의 턴입니다.`);
-            }
-            if (data.dice) setDice(data.dice);
-            if (data.rollsLeft) setRollsLeft(data.rollsLeft);
+            if (scores) setScores(scores);
+          }
+          // 턴 넘김
+          else if (data.event === "update-turn") {
+            const { turnIndex, dice, rollsLeft, users } = data;
+
+            if (users?.length) setUsers(users);
+            if (turnIndex !== undefined) setTurnIndex(turnIndex);
+            if (dice?.length) setDice(dice);
+            if (rollsLeft !== undefined) setRollsLeft(rollsLeft);
+
+            const nextPlayer = users?.[turnIndex! % users?.length]?.nick;
+            if (nextPlayer) toast.info(`${nextPlayer}님의 턴입니다.`);
           }
         } else {
           setMessages((prev) => [...prev, data]);

@@ -1,9 +1,10 @@
 export type TDice = { value: number | null; held: boolean };
+export type TUsers = { nick: string; ready: boolean }[];
 
 export type ServerMessage =
   | { type: "system"; text: string; at: number }
   | { type: "chat"; nick: string; text: string; at: number }
-  | { type: "users"; users: { nick: string; ready: boolean }[] }
+  | { type: "users"; users: TUsers }
   | {
       type: "game";
       event:
@@ -20,6 +21,7 @@ export type ServerMessage =
       rollsLeft?: number;
       lastSelected?: string;
       nick?: string;
+      users?: TUsers;
     }
   | { type: "force-exit"; reason: string };
 
@@ -144,7 +146,6 @@ export function removeClient(roomId: string, clientId: string) {
     rooms.delete(roomId);
   } else {
     broadcastUsers(roomId);
-    broadcastGameState(roomId);
   }
 }
 
@@ -214,7 +215,6 @@ export function updateScores(
     nick,
     lastSelected,
   });
-  broadcastGameState(roomId);
 }
 
 export function nextTurn(roomId: string) {
@@ -225,14 +225,19 @@ export function nextTurn(roomId: string) {
   room.rollsLeft = 3;
   room.dice = createInitialDice();
 
+  const users = [...room.clients].map((c) => ({
+    nick: c.nick,
+    ready: c.ready,
+  }));
+
   broadcast(roomId, {
     type: "game",
     event: "update-turn",
     turnIndex: room.turnIndex,
     dice: room.dice,
     rollsLeft: room.rollsLeft,
+    users,
   });
-  broadcastGameState(roomId);
 }
 
 function broadcastUsers(roomId: string) {
@@ -243,21 +248,6 @@ function broadcastUsers(roomId: string) {
     ready: c.ready,
   }));
   broadcast(roomId, { type: "users", users });
-}
-
-function broadcastGameState(roomId: string) {
-  const room = rooms.get(roomId);
-  if (!room) return;
-  broadcast(roomId, {
-    type: "game",
-    event: "state",
-    started: room.started,
-    countdown: room.countdown,
-    turnIndex: room.turnIndex,
-    scores: room.scores,
-    dice: room.dice,
-    rollsLeft: room.rollsLeft,
-  });
 }
 
 function startCountdown(roomId: string) {
@@ -281,7 +271,6 @@ function startCountdown(roomId: string) {
       room.started = true;
       room.countdown = null;
       broadcast(roomId, { type: "game", event: "start" });
-      broadcastGameState(roomId);
     }
   }, 1000);
 }
