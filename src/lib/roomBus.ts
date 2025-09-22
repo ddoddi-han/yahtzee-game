@@ -15,7 +15,7 @@ export type ServerMessage =
         | "update-turn";
       started?: boolean;
       countdown?: number | null;
-      turnIndex?: number;
+      turnNick?: string | null;
       scores?: Record<string, Record<string, number | null>>;
       dice?: TDice[];
       rollsLeft?: number;
@@ -36,7 +36,7 @@ type RoomState = {
   clients: Set<Client>;
   started: boolean;
   countdown: number | null;
-  turnIndex: number;
+  turnNick: string | null;
   scores: Record<string, Record<string, number | null>>;
   dice: TDice[];
   rollsLeft: number;
@@ -65,7 +65,7 @@ export function addClient(roomId: string, client: Client) {
       clients: new Set(),
       started: false,
       countdown: null,
-      turnIndex: 0,
+      turnNick: null,
       scores: {},
       dice: createInitialDice(),
       rollsLeft: 3,
@@ -123,7 +123,7 @@ export function addClient(roomId: string, client: Client) {
           event: "state",
           started: room.started,
           countdown: room.countdown,
-          turnIndex: room.turnIndex,
+          turnNick: room.turnNick,
           scores: room.scores,
           dice: room.dice,
           rollsLeft: room.rollsLeft,
@@ -133,20 +133,48 @@ export function addClient(roomId: string, client: Client) {
   } catch {}
 }
 
-export function removeClient(roomId: string, clientId: string) {
+export function removeClient(roomId: string, nick: string, immediate = false) {
   const room = rooms.get(roomId);
   if (!room) return;
+
+  let removedPlayer: string | null = null;
+
   for (const c of room.clients) {
-    if (c.id === clientId) {
+    if (c.nick === nick) {
+      removedPlayer = c.nick;
       room.clients.delete(c);
       break;
     }
   }
+
+  if (!removedPlayer) return;
+
   if (room.clients.size === 0) {
     rooms.delete(roomId);
-  } else {
-    broadcastUsers(roomId);
+    return;
   }
+
+  if (immediate) {
+    // ✅ 하드 퇴장: 바로 턴 넘김
+    if (removedPlayer === room.turnNick) {
+      nextTurn(roomId);
+    }
+    broadcastUsers(roomId);
+    return;
+  }
+
+  // ✅ 소프트 퇴장: 5초 대기 후 턴 넘김
+  setTimeout(() => {
+    const stillMissing = ![...room.clients].some(
+      (c) => c.nick === removedPlayer
+    );
+    if (stillMissing) {
+      if (removedPlayer === room.turnNick) {
+        nextTurn(roomId);
+      }
+      broadcastUsers(roomId);
+    }
+  }, 5000);
 }
 
 export function broadcast(roomId: string, msg: ServerMessage) {
@@ -169,7 +197,7 @@ export function getRoomState(roomId: string): RoomState {
       clients: new Set(),
       started: false,
       countdown: null,
-      turnIndex: 0,
+      turnNick: null,
       scores: {},
       dice: createInitialDice(),
       rollsLeft: 3,
@@ -221,32 +249,39 @@ export function nextTurn(roomId: string) {
   const room = rooms.get(roomId);
   if (!room) return;
 
-  room.turnIndex = (room.turnIndex + 1) % room.clients.size;
+  const clients = [...room.clients];
+  if (clients.length === 0) return;
+
+  let currentIndex = clients.findIndex((c) => c.nick === room.turnNick);
+
+  // 현재 턴 플레이어가 나갔으면, 그냥 다음 사람부터 시작
+  if (currentIndex === -1) currentIndex = 0;
+
+  const nextIndex = (currentIndex + 1) % clients.length;
+  room.turnNick = clients[nextIndex].nick;
+
   room.rollsLeft = 3;
   room.dice = createInitialDice();
-
-  const users = [...room.clients].map((c) => ({
-    nick: c.nick,
-    ready: c.ready,
-  }));
 
   broadcast(roomId, {
     type: "game",
     event: "update-turn",
-    turnIndex: room.turnIndex,
+    turnNick: room.turnNick,
     dice: room.dice,
     rollsLeft: room.rollsLeft,
-    users,
+    users: clients.map((c) => ({ nick: c.nick, ready: c.ready })),
   });
 }
 
 function broadcastUsers(roomId: string) {
   const room = rooms.get(roomId);
   if (!room) return;
+
   const users = [...room.clients].map((c) => ({
     nick: c.nick,
     ready: c.ready,
   }));
+
   broadcast(roomId, { type: "users", users });
 }
 
@@ -270,7 +305,21 @@ function startCountdown(roomId: string) {
       clearInterval(interval);
       room.started = true;
       room.countdown = null;
-      broadcast(roomId, { type: "game", event: "start" });
+
+      // 첫 번째 턴 설정
+      if (!room.turnNick) {
+        const firstClient = [...room.clients][0];
+        if (firstClient) room.turnNick = firstClient.nick;
+      }
+
+      broadcast(roomId, {
+        type: "game",
+        event: "start",
+        turnNick: room.turnNick,
+        dice: room.dice,
+        rollsLeft: room.rollsLeft,
+        scores: room.scores,
+      });
     }
   }, 1000);
 }

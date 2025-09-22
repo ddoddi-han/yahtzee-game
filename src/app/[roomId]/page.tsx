@@ -26,8 +26,8 @@ export default function RoomPage() {
   const [gameStarted, setGameStarted] =
     React.useState<RoomContextType["gameStarted"]>(false);
   const [scores, setScores] = React.useState<RoomContextType["scores"]>({});
-  const [turnIndex, setTurnIndex] =
-    React.useState<RoomContextType["turnIndex"]>(0);
+  const [turnNick, setTurnNick] =
+    React.useState<RoomContextType["turnNick"]>(null);
   const [dice, setDice] = React.useState<RoomContextType["dice"]>([]);
   const [rollsLeft, setRollsLeft] =
     React.useState<RoomContextType["rollsLeft"]>(3);
@@ -66,12 +66,12 @@ export default function RoomPage() {
         } else if (data.type === "game") {
           // 게임 상태
           if (data.event === "state") {
-            const { started, countdown, turnIndex, scores, dice, rollsLeft } =
+            const { started, countdown, turnNick, scores, dice, rollsLeft } =
               data;
 
             if (started !== undefined) setGameStarted(started);
             if (countdown !== undefined) setCountdown(countdown);
-            if (turnIndex !== undefined) setTurnIndex(turnIndex);
+            if (turnNick !== undefined) setTurnNick(turnNick);
             if (scores !== undefined) setScores(scores);
             if (dice?.length) setDice(dice);
             if (rollsLeft !== undefined) setRollsLeft(rollsLeft);
@@ -84,26 +84,41 @@ export default function RoomPage() {
           }
           // 게임 시작
           else if (data.event === "start") {
+            const { turnNick, dice, rollsLeft, scores } = data;
+
             setGameStarted(true);
             setCountdown(null);
+            if (turnNick !== undefined) setTurnNick(turnNick);
+            if (dice?.length) setDice(dice);
+            if (rollsLeft !== undefined) setRollsLeft(rollsLeft);
+            if (scores !== undefined) setScores(scores);
           }
           // 점수 업데이트
           else if (data.event === "update-scores") {
             const { scores, nick, lastSelected } = data;
 
             if (scores) setScores(scores);
+            if (nick && lastSelected) {
+              if (lastSelected === "보너스 (+35)") {
+                const text = `🎉 ${nick}님이 ${lastSelected}를 달성했습니다!`;
+                toast.success(text);
+              } else {
+                const text = `${nick}님이 ${lastSelected}를 선택했습니다.`;
+                toast.success(text);
+              }
+            }
           }
           // 턴 넘김
           else if (data.event === "update-turn") {
-            const { turnIndex, dice, rollsLeft, users } = data;
+            const { turnNick, dice, rollsLeft, users } = data;
 
-            if (users?.length) setUsers(users);
-            if (turnIndex !== undefined) setTurnIndex(turnIndex);
+            if (turnNick !== undefined) {
+              toast.info(`${turnNick}님의 턴입니다.`);
+              setTurnNick(turnNick);
+            }
             if (dice?.length) setDice(dice);
             if (rollsLeft !== undefined) setRollsLeft(rollsLeft);
-
-            const nextPlayer = users?.[turnIndex! % users?.length]?.nick;
-            if (nextPlayer) toast.info(`${nextPlayer}님의 턴입니다.`);
+            if (users?.length) setUsers(users);
           }
         } else {
           setMessages((prev) => [...prev, data]);
@@ -128,7 +143,7 @@ export default function RoomPage() {
         gameStarted,
         countdown,
         scores,
-        turnIndex,
+        turnNick,
         dice,
         rollsLeft,
       }}
@@ -143,7 +158,15 @@ export default function RoomPage() {
           </div>
           <Button
             variant="destructive"
-            onClick={() => {
+            onClick={async () => {
+              const nick = localStorage.getItem("chat_nick");
+              if (nick) {
+                await fetch("/api/game/exit", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ roomId, nick }),
+                });
+              }
               localStorage.removeItem("chat_nick");
               router.push("/");
             }}

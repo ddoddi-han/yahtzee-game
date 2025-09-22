@@ -11,17 +11,15 @@ export function GameBoard() {
   const {
     gameStarted,
     countdown,
-    users,
     nick,
     scores,
-    turnIndex,
+    turnNick,
     roomId,
     dice,
     rollsLeft,
   } = useRoom();
 
-  const turnPlayer = users[turnIndex % users.length]?.nick;
-  const notMyTurn = turnPlayer !== nick;
+  const notMyTurn = turnNick !== nick;
 
   const handleUpdateScores = async (
     newScores: Record<string, number | null>,
@@ -48,10 +46,10 @@ export function GameBoard() {
     <Card>
       <CardHeader>
         <CardTitle>
-          {gameStarted && turnPlayer && (
+          {gameStarted && turnNick && (
             <>
               <span className="text-2xl font-bold text-blue-300">
-                {turnPlayer}
+                {turnNick}
               </span>
               님의 차례입니다.
             </>
@@ -77,7 +75,7 @@ export function GameBoard() {
 
             {/* 점수판 */}
             <ScoreTable
-              scores={scores[turnPlayer]}
+              scores={scores[turnNick!] ?? {}}
               dice={dice.map((d) => d.value)}
               onUpdate={handleUpdateScores}
               disabled={notMyTurn}

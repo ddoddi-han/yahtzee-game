@@ -1,4 +1,3 @@
-// /api/toggle-hold/route.ts
 import { NextResponse } from "next/server";
 import { getRoomState, broadcast } from "@/lib/roomBus";
 
@@ -6,9 +5,8 @@ export async function POST(req: Request) {
   const { roomId, nick, index } = await req.json();
   const room = getRoomState(roomId);
 
-  const turnPlayer = [...room.clients][room.turnIndex % room.clients.size]
-    ?.nick;
-  if (turnPlayer !== nick) {
+  // ✅ 현재 턴 플레이어 확인 (turnNick 사용)
+  if (room.turnNick !== nick) {
     return NextResponse.json({ error: "Not your turn" }, { status: 403 });
   }
 
@@ -18,12 +16,13 @@ export async function POST(req: Request) {
 
   room.dice[index].held = !room.dice[index].held;
 
+  // ✅ 상태 브로드캐스트
   broadcast(roomId, {
     type: "game",
     event: "state",
     started: room.started,
     countdown: room.countdown,
-    turnIndex: room.turnIndex,
+    turnNick: room.turnNick,
     scores: room.scores,
     dice: room.dice,
     rollsLeft: room.rollsLeft,

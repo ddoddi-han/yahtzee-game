@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { updateScores, nextTurn, getRoomState, broadcast } from "@/lib/roomBus";
-import { toast } from "sonner";
 
 type SelectScoreRequest = {
   roomId: string;
@@ -26,14 +25,13 @@ export async function POST(req: Request) {
         if (lastSelected === "보너스 (+35)") {
           const text = `🎉 ${nick}님이 ${lastSelected}를 달성했습니다!`;
           broadcast(roomId, { type: "system", text, at: Date.now() });
-          toast.success(text);
         } else {
           const text = `${nick}님이 ${lastSelected}를 선택했습니다.`;
           broadcast(roomId, { type: "system", text, at: Date.now() });
-          toast.success(text);
         }
       }
 
+      // ✅ 점수 선택한 경우에만 턴 전환
       nextTurn(roomId);
     }
 
@@ -41,7 +39,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      turnIndex: state.turnIndex,
+      turnNick: state.turnNick,
       scores: state.scores,
     });
   } catch (err) {

@@ -17,7 +17,7 @@ export type RoomContextType = {
   gameStarted: boolean;
   countdown: number | null;
   scores: Record<string, Record<string, number | null>>;
-  turnIndex: number;
+  turnNick: string | null;
   dice: TDice[];
   rollsLeft: number;
 };

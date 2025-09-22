@@ -144,10 +144,9 @@ export function ScoreTable({
   const bonus = upperTotal >= 63 ? 35 : 0;
 
   React.useEffect(() => {
-    if (scores.Bonus !== bonus) {
+    if (bonus && scores.Bonus !== bonus) {
       onUpdate({ ...scores, Bonus: bonus }, "보너스 (+35)");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upperTotal, bonus]);
 
   const lowerTotal =
