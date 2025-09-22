@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { updateScores, nextTurn, getRoomState, broadcast } from "@/lib/roomBus";
+import {
+  updateScores,
+  nextTurn,
+  getRoomState,
+  broadcast,
+  TScores,
+} from "@/lib/roomBus";
 
 type SelectScoreRequest = {
   roomId: string;
   nick: string;
-  scores: Record<string, number | null>;
+  scores: TScores;
   lastSelected: string | null;
 };
 

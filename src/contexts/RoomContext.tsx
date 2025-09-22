@@ -1,6 +1,6 @@
 "use client";
 
-import { TDice, TUsers } from "@/lib/roomBus";
+import { TDice, TScores, TUsers } from "@/lib/roomBus";
 import * as React from "react";
 
 export type RoomContextType = {
@@ -16,7 +16,7 @@ export type RoomContextType = {
   users: TUsers;
   gameStarted: boolean;
   countdown: number | null;
-  scores: Record<string, Record<string, number | null>>;
+  scores: Record<string, TScores>;
   turnNick: string | null;
   dice: TDice[];
   rollsLeft: number;

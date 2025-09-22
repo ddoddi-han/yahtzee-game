@@ -3,9 +3,10 @@
 import { useRoom } from "@/contexts/RoomContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { ScoreTable } from "./ScoreTable";
+import { getTurnNumber, ScoreTable } from "./ScoreTable";
 import { toast } from "sonner";
 import { Dice } from "./button/Dice";
+import { TScores } from "@/lib/roomBus";
 
 export function GameBoard() {
   const {
@@ -21,10 +22,7 @@ export function GameBoard() {
 
   const notMyTurn = turnNick !== nick;
 
-  const handleUpdateScores = async (
-    newScores: Record<string, number | null>,
-    category: string
-  ) => {
+  const handleUpdateScores = async (newScores: TScores, category: string) => {
     try {
       await fetch("/api/game/select-score", {
         method: "POST",
@@ -44,18 +42,24 @@ export function GameBoard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>
-          {gameStarted && turnNick && (
-            <>
+      {gameStarted && turnNick && (
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <div>
               <span className="text-2xl font-bold text-blue-300">
                 {turnNick}
               </span>
               님의 차례입니다.
-            </>
-          )}
-        </CardTitle>
-      </CardHeader>
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-pink-300">
+                {getTurnNumber(scores[turnNick!] ?? {})}
+              </span>{" "}
+              / 12 턴
+            </div>
+          </CardTitle>
+        </CardHeader>
+      )}
       <CardContent className="flex-1 space-y-6">
         {!gameStarted ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-2xl">

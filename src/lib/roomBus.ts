@@ -1,5 +1,6 @@
 export type TDice = { value: number | null; held: boolean };
 export type TUsers = { nick: string; ready: boolean }[];
+export type TScores = Record<string, number | null>;
 
 export type ServerMessage =
   | { type: "system"; text: string; at: number }
@@ -16,7 +17,7 @@ export type ServerMessage =
       started?: boolean;
       countdown?: number | null;
       turnNick?: string | null;
-      scores?: Record<string, Record<string, number | null>>;
+      scores?: Record<string, TScores>;
       dice?: TDice[];
       rollsLeft?: number;
       lastSelected?: string;
@@ -37,7 +38,7 @@ type RoomState = {
   started: boolean;
   countdown: number | null;
   turnNick: string | null;
-  scores: Record<string, Record<string, number | null>>;
+  scores: Record<string, TScores>;
   dice: TDice[];
   rollsLeft: number;
 };
@@ -229,7 +230,7 @@ export function setReady(roomId: string, nick: string, ready: boolean) {
 export function updateScores(
   roomId: string,
   nick: string,
-  scores: Record<string, number | null>,
+  scores: TScores,
   lastSelected: string
 ) {
   const room = rooms.get(roomId);

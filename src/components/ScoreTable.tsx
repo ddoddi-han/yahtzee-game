@@ -2,24 +2,13 @@
 
 import * as React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./ui/table";
-import { TDice } from "@/lib/roomBus";
+import { Table, TableBody, TableCell, TableRow } from "./ui/table";
+import { TDice, TScores } from "@/lib/roomBus";
 
 interface ScoreTableProps {
-  scores: Record<string, number | null>;
+  scores: TScores;
   dice: TDice["value"][];
-  onUpdate: (
-    newScores: Record<string, number | null>,
-    category: string
-  ) => void;
+  onUpdate: (newScores: TScores, category: string) => void;
   disabled: boolean;
 }
 
@@ -46,6 +35,14 @@ const getLabel = (category: string) => {
     [...upperCategories, ...lowerCategories].find((c) => c.key === category)
       ?.label ?? category
   );
+};
+
+export const getTurnNumber = (playerScores: TScores) => {
+  const allCategories = [...upperCategories, ...lowerCategories];
+  const filled = allCategories.filter(
+    ({ key }) => playerScores[key] !== null
+  ).length;
+  return filled + 1; // 1 ~ 12
 };
 
 // 점수 계산 로직
