@@ -1,11 +1,11 @@
 "use client";
 
-import { useRoom } from "@/contexts/RoomContext";
+import { useRoom } from "@/providers/room-provider";
 
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { getTurnNumber, ScoreTable } from "./ScoreTable";
 import { toast } from "sonner";
-import { Dice } from "./button/Dice";
+import { Dice3D } from "./Dice3D";
 import { TScores } from "@/lib/roomBus";
 
 export function GameBoard() {
@@ -75,7 +75,7 @@ export function GameBoard() {
         ) : (
           <>
             {/* 주사위 */}
-            <Dice disabled={rollsLeft === 0 || notMyTurn} />
+            <Dice3D disabled={rollsLeft === 0 || notMyTurn} />
 
             {/* 점수판 */}
             <ScoreTable

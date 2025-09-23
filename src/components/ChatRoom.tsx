@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRoom } from "@/contexts/RoomContext";
+import { useRoom } from "@/providers/room-provider";
 
 export function ChatRoom() {
   const { roomId, nick, connected, messages } = useRoom();

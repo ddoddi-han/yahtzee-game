@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Play, Pause, Loader2Icon } from "lucide-react";
-import { useRoom } from "@/contexts/RoomContext";
+import { useRoom } from "@/providers/room-provider";
 
 export function PlayerList() {
   const { roomId, nick: me, users, gameStarted } = useRoom();
@@ -71,13 +71,13 @@ export function PlayerList() {
                   disabled={u.nick !== me || loading || gameStarted}
                   className={
                     needAttention
-                      ? "bg-gradient-to-r from-green-600 via-indigo-500 to-green-600 bg-[length:200%_200%] animate-gradient"
-                      : ""
+                      ? "bg-gradient-to-r from-green-600 via-indigo-500 to-green-600 bg-[length:200%_200%] animate-gradient text-white"
+                      : "text-white"
                   }
                 >
                   {u.ready || gameStarted ? (
                     <Pause />
-                  ) : loading ? (
+                  ) : isMe && loading ? (
                     <Loader2Icon className="animate-spin" />
                   ) : (
                     <Play />

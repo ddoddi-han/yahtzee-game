@@ -1,4 +1,4 @@
-import { useRoom } from "@/contexts/RoomContext";
+import { useRoom } from "@/providers/room-provider";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { Dices } from "lucide-react";
