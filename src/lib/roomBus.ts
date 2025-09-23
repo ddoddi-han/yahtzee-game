@@ -274,7 +274,7 @@ export function nextTurn(roomId: string) {
   });
 }
 
-function broadcastUsers(roomId: string) {
+export function broadcastUsers(roomId: string) {
   const room = rooms.get(roomId);
   if (!room) return;
 

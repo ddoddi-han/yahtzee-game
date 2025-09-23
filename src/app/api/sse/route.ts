@@ -3,16 +3,18 @@ import {
   broadcast,
   getRoomState,
   removeClient,
+  nextTurn,
+  broadcastUsers,
 } from "@/lib/roomBus";
 
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const room = searchParams.get("room");
+  const roomId = searchParams.get("room");
   const nick = searchParams.get("nick");
 
-  if (!room || !nick) {
+  if (!roomId || !nick) {
     return new Response("Missing room or nick", { status: 400 });
   }
 
@@ -20,17 +22,17 @@ export async function GET(req: Request) {
     start(controller) {
       const id = crypto.randomUUID();
 
-      addClient(room, { id, nick, ready: false, controller });
+      addClient(roomId, { id, nick, ready: false, controller });
 
       // 입장 시스템 메시지 브로드캐스트
-      broadcast(room, {
+      broadcast(roomId, {
         type: "system",
         text: `${nick}님이 입장했습니다.`,
         at: Date.now(),
       });
 
       // 접속한 유저에게 현재 방 상태를 즉시 내려줌
-      const state = getRoomState(room);
+      const state = getRoomState(roomId);
       const enc = new TextEncoder();
 
       const users = [...state.clients].map((c) => ({
@@ -63,8 +65,14 @@ export async function GET(req: Request) {
       // 연결 종료 처리
       const close = () => {
         clearInterval(heartbeat);
-        removeClient(room, id);
-        broadcast(room, {
+
+        // ✅ 하드 퇴장 (immediate=true)
+        removeClient(roomId, nick, true);
+
+        // 모든 유저 목록 갱신
+        broadcastUsers(roomId);
+
+        broadcast(roomId, {
           type: "system",
           text: `${nick}님이 퇴장했습니다.`,
           at: Date.now(),
