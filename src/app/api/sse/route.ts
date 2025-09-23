@@ -3,7 +3,6 @@ import {
   broadcast,
   getRoomState,
   removeClient,
-  nextTurn,
   broadcastUsers,
 } from "@/lib/roomBus";
 
@@ -66,8 +65,8 @@ export async function GET(req: Request) {
       const close = () => {
         clearInterval(heartbeat);
 
-        // ✅ 하드 퇴장 (immediate=true)
-        removeClient(roomId, nick, true);
+        // ✅ 소프트 퇴장: 5초 대기 후 턴 넘김
+        removeClient(roomId, nick, false);
 
         // 모든 유저 목록 갱신
         broadcastUsers(roomId);

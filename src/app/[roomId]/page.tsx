@@ -55,7 +55,7 @@ export default function RoomPage() {
       try {
         const data = JSON.parse(ev.data) as ServerMessage;
         if (data.type === "force-exit") {
-          toast.error("다른 탭에서 접속하여 연결이 종료되었습니다.");
+          toast.error(data.reason);
           router.push("/");
           es.close();
           return;

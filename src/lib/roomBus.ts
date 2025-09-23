@@ -82,7 +82,7 @@ export function addClient(roomId: string, client: Client) {
         enc.encode(
           `data: ${JSON.stringify({
             type: "force-exit",
-            reason: "duplicate",
+            reason: "다른 탭에서 접속하여 연결이 종료되었습니다.",
           })}\n\n`
         )
       );
@@ -134,6 +134,22 @@ export function addClient(roomId: string, client: Client) {
   } catch {}
 }
 
+function endGameIfOnlyOneLeft(roomId: string) {
+  const room = rooms.get(roomId);
+  if (!room) return false;
+
+  if (room.started && room.clients.size === 1) {
+    broadcast(roomId, {
+      type: "force-exit",
+      reason: "플레이어가 부족해 게임이 자동으로 종료되었습니다.",
+    });
+    rooms.delete(roomId);
+    return true;
+  }
+
+  return false;
+}
+
 export function removeClient(roomId: string, nick: string, immediate = false) {
   const room = rooms.get(roomId);
   if (!room) return;
@@ -155,11 +171,10 @@ export function removeClient(roomId: string, nick: string, immediate = false) {
     return;
   }
 
+  // ✅ 하드 퇴장: 바로 턴 넘김
   if (immediate) {
-    // ✅ 하드 퇴장: 바로 턴 넘김
-    if (removedPlayer === room.turnNick) {
-      nextTurn(roomId);
-    }
+    if (endGameIfOnlyOneLeft(roomId)) return;
+    if (removedPlayer === room.turnNick) nextTurn(roomId);
     broadcastUsers(roomId);
     return;
   }
@@ -170,9 +185,8 @@ export function removeClient(roomId: string, nick: string, immediate = false) {
       (c) => c.nick === removedPlayer
     );
     if (stillMissing) {
-      if (removedPlayer === room.turnNick) {
-        nextTurn(roomId);
-      }
+      if (endGameIfOnlyOneLeft(roomId)) return;
+      if (removedPlayer === room.turnNick) nextTurn(roomId);
       broadcastUsers(roomId);
     }
   }, 5000);
