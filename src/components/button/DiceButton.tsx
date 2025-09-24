@@ -45,7 +45,7 @@ export function DiceButton({
       variant="outline"
       disabled={disabled}
       onClick={onClick}
-      className={`w-11 h-11 p-1 rounded-xs disabled:opacity-100 inset-shadow-sm inset-shadow-black/10  ${
+      className={`w-10 h-10 p-1 rounded-xs disabled:opacity-100 inset-shadow-sm inset-shadow-black/25 ${
         held ? "!bg-muted-foreground" : "!bg-white"
       }`}
     >

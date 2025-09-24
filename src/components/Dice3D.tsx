@@ -15,6 +15,7 @@ let diceBox: any = null;
 export function Dice3D({ disabled }: { disabled: boolean }) {
   const { nick, roomId, dice, rollsLeft } = useRoom();
   const boxRef = useRef<any>(null);
+  const prevRollsLeft = useRef<number>(rollsLeft);
 
   useEffect(() => {
     if (!diceBox) {
@@ -42,14 +43,18 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
     if (!box?.isInitialized) return;
     if (!dice || dice.length === 0) return;
 
-    const results = dice
-      .filter((d) => !d.held && d.value != null)
-      .map((d) => d.value!);
-
-    if (results.length > 0) {
-      box.roll(`${results.length}dpip`, results);
+    // rollsLeft가 변한 경우에만 roll 실행
+    if (prevRollsLeft.current !== rollsLeft && rollsLeft < 3) {
+      const results = dice
+        .filter((d) => !d.held && d.value != null)
+        .map((d) => d.value!);
+      if (results.length > 0) {
+        box.roll(`${results.length}dpip@${results.toString()}`);
+      }
     }
-  }, [dice]);
+
+    prevRollsLeft.current = rollsLeft;
+  }, [dice, rollsLeft]);
 
   const rollDice = async () => {
     if (rollsLeft <= 0) {
@@ -85,7 +90,7 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
     <div className="flex flex-col items-center gap-4">
       <div className="flex flex-col relative">
         {/* 🎲 주사위 상태 (고정 여부 표시) */}
-        <div className="flex gap-3 absolute z-50 top-[12%] left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="flex gap-4 absolute z-50 top-[12%] left-1/2 -translate-x-1/2 -translate-y-1/2">
           {dice.map((d, i) => (
             <DiceButton
               key={i}

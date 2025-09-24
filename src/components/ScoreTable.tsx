@@ -112,23 +112,6 @@ export function ScoreTable({
     return all;
   }, [dice]);
 
-  // 가장 높은 예상값 찾기
-  const highlightKeys = React.useMemo(() => {
-    let maxVal = -1;
-    const candidates: string[] = [];
-    for (const [key, val] of Object.entries(predicted)) {
-      if (scores[key] !== null) continue; // 이미 채점된 건 제외
-      if (val > maxVal) {
-        maxVal = val;
-        candidates.length = 0;
-        candidates.push(key);
-      } else if (val === maxVal) {
-        candidates.push(key);
-      }
-    }
-    return candidates;
-  }, [predicted, scores]);
-
   // 상단 합계 & 보너스
   const upperTotal =
     (scores.Ones ?? 0) +
@@ -179,28 +162,11 @@ export function ScoreTable({
   ) => {
     const auto = options?.auto ?? false;
     const isDisabled = isRowDisabled(key) || auto;
-    const showPred = value === null && key !== "Bonus";
-    const predVal = predicted[key];
 
     return (
       <TableRow key={key}>
         <TableCell className="align-middle">{label}</TableCell>
         <TableCell className="text-right flex items-center justify-end gap-3">
-          {/* 예상 점수 미리보기 */}
-          {showPred && predVal && !isDisabled ? (
-            <span
-              className={`text-xs h-5 leading-6 ${
-                highlightKeys.includes(key)
-                  ? "text-red-300 font-bold"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {predVal}점
-            </span>
-          ) : (
-            <></>
-          )}
-
           {/* 값 또는 체크박스 */}
           {value !== null ? (
             <span className="font-semibold">{value}</span>
