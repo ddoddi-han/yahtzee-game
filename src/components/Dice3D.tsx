@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useRoom } from "@/providers/room-provider";
 import { Button } from "./ui/button";
 import { Dices } from "lucide-react";
+import { DiceButton } from "./button/DiceButton";
 
 // 전역 싱글턴 DiceBox
 let diceBox: any = null;
@@ -20,7 +21,8 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
         assetPath: "/assets/dice-box/",
         theme: "smooth-pip",
         themeColor: "#FFFFFF",
-        scale: 14,
+        scale: 9,
+        mass: 0.5,
       });
 
       diceBox.init().then(() => {
@@ -35,17 +37,16 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!boxRef.current) return;
+    const box = boxRef.current;
+    if (!box?.isInitialized) return;
     if (!dice || dice.length === 0) return;
-
-    if (!boxRef.current.isInitialized) return;
 
     const results = dice
       .filter((d) => !d.held && d.value != null)
       .map((d) => d.value!);
 
     if (results.length > 0) {
-      boxRef.current.roll(`${results.length}dpip`, results);
+      box.roll(`${results.length}dpip`, results);
     }
   }, [dice]);
 
@@ -81,21 +82,17 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
 
   return (
     <div className="flex md:flex-row flex-col justify-between items-center gap-4">
-      <div className="flex flex-col">
+      <div className="flex flex-col relative">
         {/* 🎲 주사위 상태 (고정 여부 표시) */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 absolute z-50 top-[12%] left-1/2 -translate-x-1/2 -translate-y-1/2">
           {dice.map((d, i) => (
-            <Button
-              variant={"outline"}
+            <DiceButton
               key={i}
+              value={d.value}
+              held={d.held}
               disabled={disabled}
               onClick={() => toggleHold(i)}
-              className={`w-12 h-12 text-xl ${
-                d.held ? "!bg-muted-foreground" : ""
-              }`}
-            >
-              {d.value}
-            </Button>
+            />
           ))}
         </div>
         <div id="dice-box" />
