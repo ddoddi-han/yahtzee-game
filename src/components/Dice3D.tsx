@@ -7,6 +7,7 @@ import { useRoom } from "@/providers/room-provider";
 import { Button } from "./ui/button";
 import { Dices } from "lucide-react";
 import { DiceButton } from "./button/DiceButton";
+import { cn } from "@/lib/utils";
 
 // 전역 싱글턴 DiceBox
 let diceBox: any = null;
@@ -81,7 +82,7 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
   };
 
   return (
-    <div className="flex md:flex-row flex-col justify-between items-center gap-4">
+    <div className="flex flex-col items-center gap-4">
       <div className="flex flex-col relative">
         {/* 🎲 주사위 상태 (고정 여부 표시) */}
         <div className="flex gap-3 absolute z-50 top-[12%] left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -98,7 +99,16 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
         <div id="dice-box" />
       </div>
 
-      <Button onClick={rollDice} disabled={disabled}>
+      <Button
+        variant={"secondary"}
+        className={cn(
+          "text-white font-bold",
+          !disabled &&
+            "bg-linear-to-r/increasing from-red-500 to-rose-500 bg-[length:200%_200%] animate-gradient"
+        )}
+        onClick={rollDice}
+        disabled={disabled}
+      >
         <Dices />
         주사위 굴리기 ({rollsLeft})
       </Button>
