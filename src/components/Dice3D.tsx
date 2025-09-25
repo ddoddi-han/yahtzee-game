@@ -1,33 +1,33 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import DiceBox from "@3d-dice/dice-box";
+import { useEffect, useRef } from "react";
+import DiceBox from "@drdreo/dice-box-threejs";
 import { toast } from "sonner";
 import { useRoom } from "@/providers/room-provider";
 import { Button } from "./ui/button";
 import { Dices } from "lucide-react";
 import { DiceButton } from "./button/DiceButton";
 import { cn } from "@/lib/utils";
+import { DiceHoverOverlay } from "./DiceOverlay";
 
 // 전역 싱글턴 DiceBox
-let diceBox: any = null;
+let diceBox: DiceBox;
 
 export function Dice3D({ disabled }: { disabled: boolean }) {
   const { nick, roomId, dice, rollsLeft } = useRoom();
-  const boxRef = useRef<any>(null);
+  const boxRef = useRef<DiceBox | null>(null);
   const prevRollsLeft = useRef<number>(rollsLeft);
 
   useEffect(() => {
     if (!diceBox) {
       diceBox = new DiceBox("#dice-box", {
-        assetPath: "/assets/dice-box/",
-        theme: "smooth-pip",
-        themeColor: "#FFFFFF",
-        scale: 9,
-        mass: 0.5,
+        baseScale: 70,
+        light_intensity: 13,
+        strength: 8,
+        enableDiceSelection: true,
       });
 
-      diceBox.init().then(() => {
+      diceBox.initialize().then(() => {
         diceBox.isInitialized = true;
         boxRef.current = diceBox;
       });
@@ -43,13 +43,29 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
     if (!box?.isInitialized) return;
     if (!dice || dice.length === 0) return;
 
+    // 새 턴 → 주사위 초기화
+    if (rollsLeft === 3) box.clearDice();
+
     // rollsLeft가 변한 경우에만 roll 실행
     if (prevRollsLeft.current !== rollsLeft && rollsLeft < 3) {
-      const results = dice
+      const activeValues = dice
         .filter((d) => !d.held && d.value != null)
         .map((d) => d.value!);
-      if (results.length > 0) {
-        box.roll(`${results.length}dpip@${results.toString()}`);
+
+      if (activeValues.length) {
+        box.roll(`${activeValues.length}dpip@${activeValues.toString()}`);
+        box.onDiceClick = (diceInfo) => {
+          const unheldOriginalIndices = dice.reduce<number[]>(
+            (acc, die, idx) => {
+              if (!die.held) acc.push(idx);
+              return acc;
+            },
+            []
+          );
+          const originalIndex = unheldOriginalIndices[diceInfo.id];
+
+          toggleHold(originalIndex);
+        };
       }
     }
 
@@ -88,31 +104,34 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="flex flex-col relative">
+      <div className="relative">
         {/* 🎲 주사위 상태 (고정 여부 표시) */}
         <div className="flex gap-4 absolute z-50 top-[12%] left-1/2 -translate-x-1/2 -translate-y-1/2">
           {dice.map((d, i) => (
             <DiceButton
               key={i}
-              value={d.value}
-              held={d.held}
+              value={d && d.held ? d.value : null}
               disabled={disabled}
               onClick={() => toggleHold(i)}
             />
           ))}
         </div>
-        <div id="dice-box" />
+        <div className="dice-container">
+          <div id="dice-box" />
+          {!disabled && <DiceHoverOverlay />}
+        </div>
       </div>
 
       <Button
         variant={"secondary"}
         className={cn(
           "text-white font-bold",
-          !disabled &&
+          rollsLeft &&
+            !disabled &&
             "bg-linear-to-r/increasing from-red-500 to-rose-500 bg-[length:200%_200%] animate-gradient"
         )}
         onClick={rollDice}
-        disabled={disabled}
+        disabled={disabled || !rollsLeft}
       >
         <Dices />
         주사위 굴리기 ({rollsLeft})

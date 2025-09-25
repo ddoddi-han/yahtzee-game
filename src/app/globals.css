@@ -144,22 +144,43 @@
   }
 }
 
-#dice-box {
+.dice-container {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 400px;
   height: 400px;
-  background-image: url(/images/dice_board.png);
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: url(/images/dice_board.png) center/contain no-repeat;
   border-radius: 70px;
+  overflow: hidden; /* 넘치면 잘라내기 */
+}
+
+#dice-box {
+  position: relative;
+  width: 288px;
+  height: 270px;
+  margin-top: 21px;
 }
 
 #dice-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.dice-hover-overlay {
   position: absolute;
-  width: 288px;
-  height: 270px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -46%);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: all 0.25s ease;
+  border-radius: 50%;
+  opacity: 0;
+
+  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.4),
+    0 0 4px 2px rgba(255, 255, 255, 0.6) inset;
+}
+
+.dice-hover-overlay.active {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
 }

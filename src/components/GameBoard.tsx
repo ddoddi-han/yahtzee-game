@@ -75,7 +75,7 @@ export function GameBoard() {
         ) : (
           <>
             {/* 주사위 */}
-            <Dice3D disabled={rollsLeft === 0 || notMyTurn} />
+            <Dice3D disabled={notMyTurn} />
 
             {/* 점수판 */}
             <ScoreTable

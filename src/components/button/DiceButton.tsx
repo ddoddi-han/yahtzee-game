@@ -1,6 +1,9 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Button } from "../ui/button";
+
+const MotionButton = motion(Button);
 
 function DiceEye({ value }: { value: number | null }) {
   if (value == null) return null;
@@ -29,27 +32,33 @@ function DiceEye({ value }: { value: number | null }) {
 
 export function DiceButton({
   value,
-  held,
   disabled,
   onClick,
 }: {
   value: number | null;
-  held: boolean;
   disabled?: boolean;
   onClick?: () => void;
 }) {
-  if (value === null) return null;
+  const isVisible = value !== null;
 
   return (
-    <Button
+    <MotionButton
       variant="outline"
       disabled={disabled}
       onClick={onClick}
-      className={`w-10 h-10 p-1 rounded-xs disabled:opacity-100 inset-shadow-sm inset-shadow-black/25 ${
-        held ? "!bg-muted-foreground" : "!bg-white"
-      }`}
+      className={`w-10 h-10 p-1 rounded-xs disabled:opacity-100 inset-shadow-sm inset-shadow-black/25
+        ${
+          isVisible
+            ? "!bg-white hover:!bg-muted-foreground"
+            : "!bg-transparent !border-transparent !shadow-none"
+        }
+      `}
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.5 }}
+      transition={{ duration: 0.5, ease: "easeOut" }} // 천천히 나오게
     >
-      <DiceEye value={value} />
-    </Button>
+      {isVisible && <DiceEye value={value} />}
+    </MotionButton>
   );
 }
