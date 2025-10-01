@@ -17,6 +17,7 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
   const { nick, roomId, dice, rollsLeft } = useRoom();
   const boxRef = useRef<DiceBox | null>(null);
   const prevRollsLeft = useRef<number>(rollsLeft);
+  const diceIdToIndex = useRef<Record<number, number>>({});
 
   useEffect(() => {
     if (!diceBox) {
@@ -28,7 +29,7 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
       });
 
       diceBox.initialize().then(() => {
-        diceBox.isInitialized = true;
+        diceBox.initialized = true;
         boxRef.current = diceBox;
       });
     } else {
@@ -40,7 +41,7 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
 
   useEffect(() => {
     const box = boxRef.current;
-    if (!box?.isInitialized) return;
+    if (!box?.initialized) return;
     if (!dice || dice.length === 0) return;
 
     // 새 턴 → 주사위 초기화
@@ -48,23 +49,30 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
 
     // rollsLeft가 변한 경우에만 roll 실행
     if (prevRollsLeft.current !== rollsLeft && rollsLeft < 3) {
-      const activeValues = dice
-        .filter((d) => !d.held && d.value != null)
-        .map((d) => d.value!);
+      const unheldOriginIdxs = dice.reduce<number[]>((acc, die, idx) => {
+        if (!die.held && die.value != null) acc.push(idx);
+        return acc;
+      }, []);
 
+      const activeValues = unheldOriginIdxs.map((i) => dice[i].value!);
       if (activeValues.length) {
         box.roll(`${activeValues.length}dpip@${activeValues.toString()}`);
+        box.onRollComplete = (result) => {
+          const rolledDice = result.sets[0].rolls;
+          rolledDice.forEach((die, i) => {
+            diceIdToIndex.current[die.id] = unheldOriginIdxs[i];
+          });
+        };
         box.onDiceClick = (diceInfo) => {
-          const unheldOriginalIndices = dice.reduce<number[]>(
-            (acc, die, idx) => {
-              if (!die.held) acc.push(idx);
-              return acc;
-            },
-            []
-          );
-          const originalIndex = unheldOriginalIndices[diceInfo.id];
+          if (diceInfo.reason === "remove") return;
 
-          toggleHold(originalIndex);
+          const originalIndex = diceIdToIndex.current[diceInfo.id];
+          if (originalIndex === undefined) return;
+
+          toggleHold(originalIndex).then(async () => {
+            await box.remove([diceInfo.id]);
+            delete diceIdToIndex.current[diceInfo.id];
+          });
         };
       }
     }
@@ -91,11 +99,23 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
 
   const toggleHold = async (index: number) => {
     try {
-      await fetch("/api/game/hold-dice", {
+      const res = await fetch("/api/game/hold-dice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomId, nick, index }),
       });
+
+      const data = await res.json();
+      const updatedDice = data.dice;
+
+      if (!updatedDice[index].held) {
+        const addedDice = await boxRef.current?.add(
+          `1dpip@${updatedDice[index].value}`
+        );
+        if (addedDice?.[0]) {
+          diceIdToIndex.current[addedDice[0].id] = index;
+        }
+      }
     } catch (err) {
       console.error("주사위 고정/해제 실패:", err);
       toast.error("주사위 고정/해제 실패");

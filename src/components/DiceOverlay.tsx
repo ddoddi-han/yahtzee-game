@@ -8,7 +8,7 @@ export function DiceHoverOverlay() {
         ".dice-hover-overlay"
       ) as HTMLDivElement;
 
-      if (diceInfo) {
+      if (diceInfo && diceInfo.reason !== "remove") {
         if (!overlay) {
           overlay = document.createElement("div");
           overlay.className = "dice-hover-overlay";

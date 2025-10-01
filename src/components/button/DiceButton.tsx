@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 
-const MotionButton = motion(Button);
+const MotionButton = motion.create(Button);
 
 function DiceEye({ value }: { value: number | null }) {
   if (value == null) return null;
