@@ -30,7 +30,7 @@ export default function RoomPage() {
         <GameBoard />
 
         <div className="flex min-h-0 flex-col gap-6 lg:h-full">
-          <div className="grid min-h-[520px] flex-1 grid-rows-[7fr_3fr] gap-6 lg:min-h-0">
+          <div className="grid min-h-130 flex-1 grid-rows-[7fr_3fr] gap-6 lg:min-h-0">
             <ChatRoom />
             <PlayerList />
           </div>

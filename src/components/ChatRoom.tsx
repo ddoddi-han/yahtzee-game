@@ -81,7 +81,7 @@ export function ChatRoom() {
                 <li key={m.id} className="text-sm">
                   <span className="font-semibold">{m.nick}</span>
                   <span className="mx-2 text-xs text-muted-foreground align-middle">({time})</span>
-                  <span className="break-words">{m.text}</span>
+                  <span className="wrap-break-word">{m.text}</span>
                 </li>
               );
             })}

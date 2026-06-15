@@ -63,7 +63,7 @@ export function PlayerList() {
                   disabled={u.nick !== me || loading || gameStarted}
                   className={
                     needAttention
-                      ? 'bg-gradient-to-r from-green-600 via-indigo-500 to-green-600 bg-[length:200%_200%] animate-gradient text-white'
+                      ? 'bg-linear-to-r from-green-600 via-indigo-500 to-green-600 bg-size-[200%_200%] animate-gradient text-white'
                       : 'text-white'
                   }
                 >

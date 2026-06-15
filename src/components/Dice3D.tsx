@@ -99,7 +99,7 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
           'text-white font-bold',
           rollsLeft &&
             !disabled &&
-            'bg-linear-to-r/increasing from-red-500 to-rose-500 bg-[length:200%_200%] animate-gradient'
+            'bg-linear-to-r/increasing from-red-500 to-rose-500 bg-size-[200%_200%] animate-gradient'
         )}
         onClick={rollDice}
         disabled={disabled || !rollsLeft}
