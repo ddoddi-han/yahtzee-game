@@ -43,13 +43,15 @@ export function assertCanJoinRoom(room: RoomState, nick: string) {
 }
 
 export function joinRoomState(room: RoomState, nick: string) {
-  assertCanJoinRoom(room, nick);
-
   const isNewPlayer = !room.players.has(nick);
-  addPlayer(room, nick);
-  if (isNewPlayer) {
-    appendEvent(room, { type: 'system', text: `${nick}님이 입장했습니다.` });
+  if (!isNewPlayer) {
+    addPlayer(room, nick);
+    return;
   }
+
+  assertCanJoinRoom(room, nick);
+  addPlayer(room, nick);
+  appendEvent(room, { type: 'system', text: `${nick}님이 입장했습니다.` });
 }
 
 export function setReadyState(room: RoomState, nick: string, ready: boolean) {

@@ -15,7 +15,7 @@ import {
   toggleHeldDieState,
 } from '../domain/room-transitions';
 import { RoomState } from '../domain/state';
-import { broadcast } from './sse-bus';
+import { broadcast, getConnection } from './sse-bus';
 import {
   getOrCreateRoom,
   getRoomRuntime,
@@ -49,6 +49,7 @@ export function canJoinRoom(roomId: string, nick: string) {
 
 export function joinRoom(roomId: string, nick: string) {
   const room = getOrCreateRoom(roomId);
+  cancelDisconnect(roomId, nick);
   joinRoomState(room, nick);
   broadcastSnapshot(room);
   return buildSnapshot(room);
@@ -143,6 +144,29 @@ export function markDisconnected(roomId: string, nick: string) {
   return buildSnapshot(room);
 }
 
+export function scheduleDisconnect(roomId: string, nick: string, delayMs = 10_000) {
+  const room = peekRoom(roomId);
+  if (!room) return;
+
+  const runtime = getRoomRuntime(roomId);
+  clearDisconnectTimer(roomId, nick);
+
+  const timer = setTimeout(() => {
+    runtime.disconnectTimers.delete(nick);
+    if (getConnection(roomId, nick)) return;
+    if (!peekRoom(roomId)) return;
+
+    markDisconnected(roomId, nick);
+    removeRoomIfEmpty(roomId);
+  }, delayMs);
+
+  runtime.disconnectTimers.set(nick, timer);
+}
+
+export function cancelDisconnect(roomId: string, nick: string) {
+  clearDisconnectTimer(roomId, nick);
+}
+
 export function restartRoom(roomId: string, nick: string) {
   const room = requireRoom(roomId);
   if (!room.players.has(nick)) {
@@ -160,6 +184,7 @@ export function removeRoomIfEmpty(roomId: string) {
   if (!room) return;
   if ([...room.players.values()].every(player => !player.connected)) {
     clearCountdownTimer(roomId);
+    clearDisconnectTimers(roomId);
     removeRoomRuntime(roomId);
     rooms.delete(roomId);
   }
@@ -169,4 +194,19 @@ function clearCountdownTimer(roomId: string) {
   const runtime = getRoomRuntime(roomId);
   if (runtime.countdownTimer) clearInterval(runtime.countdownTimer);
   runtime.countdownTimer = null;
+}
+
+function clearDisconnectTimer(roomId: string, nick: string) {
+  const runtime = getRoomRuntime(roomId);
+  const timer = runtime.disconnectTimers.get(nick);
+  if (timer) clearTimeout(timer);
+  runtime.disconnectTimers.delete(nick);
+}
+
+function clearDisconnectTimers(roomId: string) {
+  const runtime = getRoomRuntime(roomId);
+  for (const timer of runtime.disconnectTimers.values()) {
+    clearTimeout(timer);
+  }
+  runtime.disconnectTimers.clear();
 }

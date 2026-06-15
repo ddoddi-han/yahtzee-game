@@ -8,6 +8,7 @@ type GlobalRooms = {
 
 export type RoomRuntimeState = {
   countdownTimer: ReturnType<typeof setInterval> | null;
+  disconnectTimers: Map<string, ReturnType<typeof setTimeout>>;
 };
 
 const globalRooms = globalThis as typeof globalThis & GlobalRooms;
@@ -60,7 +61,7 @@ export function requireRoom(roomId: string) {
 export function getRoomRuntime(roomId: string) {
   let runtime = roomRuntimes.get(roomId);
   if (!runtime) {
-    runtime = { countdownTimer: null };
+    runtime = { countdownTimer: null, disconnectTimers: new Map() };
     roomRuntimes.set(roomId, runtime);
   }
   return runtime;

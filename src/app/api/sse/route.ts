@@ -1,7 +1,11 @@
 import { joinRoomInputSchema } from '@/features/game/server/api-schemas';
 import { jsonError } from '@/features/game/server/api-response';
 import { addConnection, removeConnection } from '@/features/game/server/sse-bus';
-import { joinRoom, markDisconnected, removeRoomIfEmpty } from '@/features/game/server/room-runtime';
+import {
+  joinRoom,
+  removeRoomIfEmpty,
+  scheduleDisconnect,
+} from '@/features/game/server/room-runtime';
 
 export const runtime = 'nodejs';
 
@@ -41,7 +45,7 @@ export async function GET(req: Request) {
             connection.id
           );
           if (removedCurrentConnection) {
-            markDisconnected(input.roomId, input.nick);
+            scheduleDisconnect(input.roomId, input.nick);
           }
           removeRoomIfEmpty(input.roomId);
         };
