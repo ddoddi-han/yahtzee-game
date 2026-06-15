@@ -76,15 +76,52 @@ describe('useRoomMessages', () => {
     ]);
   });
 
-  it('loads older messages through cursor pagination state', async () => {
+  it('loads initial history and hides the older messages button when there are no older pages', async () => {
     render(<MessagesProbe />);
+
+    await waitFor(() => {
+      expect(screen.getByText('old')).toBeInTheDocument();
+    });
+    expect(screen.getByText('live')).toBeInTheDocument();
+    expect(screen.getByTestId('has-older')).toHaveTextContent('false');
+  });
+
+  it('loads older messages through cursor pagination state', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        nodes: [liveMessage],
+        pageInfo: { endCursor: 'cursor-live', hasNextPage: true },
+      }),
+    } as Response);
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        nodes: [oldMessage],
+        pageInfo: { endCursor: 'cursor-old', hasNextPage: false },
+      }),
+    } as Response);
+
+    render(<MessagesProbe />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('has-older')).toHaveTextContent('true');
+    });
 
     await userEvent.click(screen.getByRole('button', { name: 'load' }));
 
     await waitFor(() => {
       expect(screen.getByText('old')).toBeInTheDocument();
     });
-    expect(screen.getByText('live')).toBeInTheDocument();
+    expect(fetch).toHaveBeenLastCalledWith(
+      '/api/chat/history',
+      expect.objectContaining({
+        body: JSON.stringify({
+          roomId: 'room-a',
+          pagination: { limit: 30, before: 'cursor-live' },
+        }),
+      })
+    );
     expect(screen.getByTestId('has-older')).toHaveTextContent('false');
   });
 });
