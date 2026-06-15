@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -149,18 +149,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 400px;
-  height: 400px;
+  width: min(400px, calc(100vw - 2rem));
+  aspect-ratio: 1;
   background: url(/images/dice_board.png) center/contain no-repeat;
-  border-radius: 70px;
+  border-radius: clamp(24px, 10vw, 70px);
   overflow: hidden; /* 넘치면 잘라내기 */
 }
 
 #dice-box {
   position: relative;
-  width: 288px;
-  height: 270px;
-  margin-top: 21px;
+  width: 72%;
+  height: 68%;
+  margin-top: 5%;
 }
 
 #dice-box canvas {
@@ -176,7 +176,8 @@
   border-radius: 50%;
   opacity: 0;
 
-  box-shadow: 0 0 15px 8px rgba(0, 0, 0, 0.4),
+  box-shadow:
+    0 0 15px 8px rgba(0, 0, 0, 0.4),
     0 0 4px 2px rgba(255, 255, 255, 0.6) inset;
 }
 

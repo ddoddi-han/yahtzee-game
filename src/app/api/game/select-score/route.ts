@@ -1,58 +1,13 @@
-import { NextResponse } from "next/server";
-import {
-  updateScores,
-  nextTurn,
-  getRoomState,
-  broadcast,
-  TScores,
-} from "@/lib/roomBus";
-
-type SelectScoreRequest = {
-  roomId: string;
-  nick: string;
-  scores: TScores;
-  lastSelected: string | null;
-};
+import { NextResponse } from 'next/server';
+import { jsonError } from '@/features/game/server/api-response';
+import { selectScoreInputSchema } from '@/features/game/server/api-schemas';
+import { selectScore } from '@/features/game/server/room-runtime';
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as SelectScoreRequest;
-    const { roomId, nick, scores, lastSelected } = body;
-
-    if (!roomId || !nick || !scores) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    }
-
-    // 점수 업데이트
-    if (lastSelected) {
-      updateScores(roomId, nick, scores, lastSelected);
-
-      if (nick && lastSelected) {
-        if (lastSelected === "보너스 (+35)") {
-          const text = `🎉 ${nick}님이 ${lastSelected}를 달성했습니다!`;
-          broadcast(roomId, { type: "system", text, at: Date.now() });
-        } else {
-          const text = `${nick}님이 ${lastSelected}를 선택했습니다.`;
-          broadcast(roomId, { type: "system", text, at: Date.now() });
-        }
-      }
-
-      // ✅ 점수 선택한 경우에만 턴 전환
-      nextTurn(roomId);
-    }
-
-    const state = getRoomState(roomId);
-
-    return NextResponse.json({
-      success: true,
-      turnNick: state.turnNick,
-      scores: state.scores,
-    });
-  } catch (err) {
-    console.error("select-score error:", err);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    const input = selectScoreInputSchema.parse(await req.json());
+    return NextResponse.json(selectScore(input));
+  } catch (error) {
+    return jsonError(error);
   }
 }

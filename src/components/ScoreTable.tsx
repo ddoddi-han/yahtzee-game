@@ -1,183 +1,88 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableRow } from "./ui/table";
-import { TDice, TScores } from "@/lib/roomBus";
+import * as React from 'react';
+import {
+  CATEGORY_LABELS,
+  LOWER_CATEGORIES,
+  SCORE_CATEGORIES,
+  ScoreCategory,
+  ScoreSheet,
+  UPPER_CATEGORIES,
+} from '@/features/game/domain/categories';
+import {
+  calculateScore,
+  calculateTotal,
+  calculateUpperTotal,
+  DiceValue,
+  RolledDice,
+} from '@/features/game/domain/scoring';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableRow } from './ui/table';
 
 interface ScoreTableProps {
-  scores: TScores;
-  dice: TDice["value"][];
-  onUpdate: (newScores: TScores, category: string) => void;
+  scores: ScoreSheet;
+  dice: (DiceValue | null)[];
+  onSelectCategory: (category: ScoreCategory) => void;
   disabled: boolean;
 }
 
-const upperCategories = [
-  { key: "Ones", label: "Ones" },
-  { key: "Twos", label: "Twos" },
-  { key: "Threes", label: "Threes" },
-  { key: "Fours", label: "Fours" },
-  { key: "Fives", label: "Fives" },
-  { key: "Sixes", label: "Sixes" },
-];
-
-const lowerCategories = [
-  { key: "FourKind", label: "Four of a Kind" },
-  { key: "FullHouse", label: "Full House" },
-  { key: "SmallStraight", label: "Small Straight" },
-  { key: "LargeStraight", label: "Large Straight" },
-  { key: "Chance", label: "Chance" },
-  { key: "Yahtzee", label: "Yahtzee" },
-];
-
-const getLabel = (category: string) => {
-  return (
-    [...upperCategories, ...lowerCategories].find((c) => c.key === category)
-      ?.label ?? category
-  );
-};
-
-export const getTurnNumber = (playerScores: TScores) => {
-  const allCategories = [...upperCategories, ...lowerCategories];
-  const filled = allCategories.filter(
-    ({ key }) => playerScores[key] !== null
+export const getTurnNumber = (playerScores: Partial<ScoreSheet>) => {
+  const filled = SCORE_CATEGORIES.filter(
+    category => playerScores[category] !== null && playerScores[category] !== undefined
   ).length;
-  return filled + 1; // 1 ~ 12
+  return Math.min(filled + 1, SCORE_CATEGORIES.length);
 };
 
-// 점수 계산 로직
-function calculateScore(key: string, dice: (number | null)[]): number {
-  // 아직 안굴린 주사위(null)가 하나라도 있으면 점수 불가
-  if (dice.some((d) => d === null)) return 0;
-
-  const counts: Record<number, number> = {};
-  for (const d of dice as number[]) counts[d] = (counts[d] || 0) + 1;
-  const values = Object.values(counts);
-
-  switch (key) {
-    case "Ones":
-      return dice.filter((d) => d === 1).reduce((a, b) => a + b, 0);
-    case "Twos":
-      return dice.filter((d) => d === 2).reduce((a, b) => a + b, 0);
-    case "Threes":
-      return dice.filter((d) => d === 3).reduce((a, b) => a + b, 0);
-    case "Fours":
-      return dice.filter((d) => d === 4).reduce((a, b) => a + b, 0);
-    case "Fives":
-      return dice.filter((d) => d === 5).reduce((a, b) => a + b, 0);
-    case "Sixes":
-      return dice.filter((d) => d === 6).reduce((a, b) => a + b, 0);
-
-    case "FourKind":
-      return values.some((v) => v >= 4)
-        ? (dice as number[]).reduce((a, b) => a + b, 0)
-        : 0;
-    case "FullHouse":
-      return values.includes(3) && values.includes(2) ? 25 : 0;
-    case "SmallStraight": {
-      const uniq = [...new Set(dice as number[])].sort();
-      const straights = [
-        [1, 2, 3, 4],
-        [2, 3, 4, 5],
-        [3, 4, 5, 6],
-      ];
-      return straights.some((s) => s.every((n) => uniq.includes(n))) ? 30 : 0;
-    }
-    case "LargeStraight": {
-      const uniq = [...new Set(dice as number[])].sort().join("");
-      return uniq === "12345" || uniq === "23456" ? 40 : 0;
-    }
-    case "Chance":
-      return (dice as number[]).reduce((a, b) => a + b, 0);
-    case "Yahtzee":
-      return values.includes(5) ? 50 : 0;
-    default:
-      return 0;
-  }
+function toRolledDice(dice: (DiceValue | null)[]): RolledDice | null {
+  if (dice.length !== 5 || dice.some(value => value === null)) return null;
+  return dice as RolledDice;
 }
 
-export function ScoreTable({
-  scores,
-  dice,
-  onUpdate,
-  disabled,
-}: ScoreTableProps) {
-  // 예측 점수 맵
+export function ScoreTable({ scores, dice, onSelectCategory, disabled }: ScoreTableProps) {
+  const rolledDice = React.useMemo(() => toRolledDice(dice), [dice]);
+
   const predicted = React.useMemo(() => {
-    const all: Record<string, number> = {};
-    [...upperCategories, ...lowerCategories].forEach(({ key }) => {
-      all[key] = calculateScore(key, dice);
-    });
-    // Bonus는 자동 계산이므로 여기선 제외
-    return all;
-  }, [dice]);
+    if (!rolledDice) return null;
+    return Object.fromEntries(
+      SCORE_CATEGORIES.map(category => [category, calculateScore(category, rolledDice)])
+    ) as Record<ScoreCategory, number>;
+  }, [rolledDice]);
 
-  // 상단 합계 & 보너스
-  const upperTotal =
-    (scores.Ones ?? 0) +
-    (scores.Twos ?? 0) +
-    (scores.Threes ?? 0) +
-    (scores.Fours ?? 0) +
-    (scores.Fives ?? 0) +
-    (scores.Sixes ?? 0);
+  const upperTotal = calculateUpperTotal(scores);
+  const lowerTotal = LOWER_CATEGORIES.reduce(
+    (total, category) => total + (scores[category] ?? 0),
+    0
+  );
+  const totalSum = calculateTotal(scores);
 
-  const bonus = upperTotal >= 63 ? 35 : 0;
-
-  React.useEffect(() => {
-    if (bonus && scores.Bonus !== bonus) {
-      onUpdate({ ...scores, Bonus: bonus }, "보너스 (+35)");
-    }
-  }, [upperTotal, bonus]);
-
-  const lowerTotal =
-    (scores.FourKind ?? 0) +
-    (scores.FullHouse ?? 0) +
-    (scores.SmallStraight ?? 0) +
-    (scores.LargeStraight ?? 0) +
-    (scores.Chance ?? 0) +
-    (scores.Yahtzee ?? 0);
-
-  const totalSum = upperTotal + bonus + lowerTotal;
-
-  const handleSelect = (category: string) => {
-    if (category === "Bonus") return;
-    if (scores[category] !== null) return;
-    const newScore = predicted[category] ?? 0;
-    onUpdate({ ...scores, [category]: newScore }, getLabel(category));
-  };
-
-  const isRowDisabled = (key: string) => {
-    if (disabled) return true; // 내 턴 아님
-    if (key === "Bonus") return true; // 자동 계산
-    if (scores[key] !== null) return true; // 이미 채점됨
-    if (dice.some((d) => d === null)) return true; // 아직 안 굴림
+  const isRowDisabled = (category: ScoreCategory) => {
+    if (disabled) return true;
+    if (!rolledDice) return true;
+    if (scores[category] !== null) return true;
     return false;
   };
 
-  const renderRow = (
-    key: string,
-    label: string,
-    value: number | null,
-    options?: { auto?: boolean }
-  ) => {
-    const auto = options?.auto ?? false;
-    const isDisabled = isRowDisabled(key) || auto;
+  const renderCategoryRow = (category: ScoreCategory) => {
+    const savedScore = scores[category];
+    const previewScore = predicted?.[category] ?? 0;
+    const isDisabled = isRowDisabled(category);
 
     return (
-      <TableRow key={key}>
-        <TableCell className="align-middle">{label}</TableCell>
-        <TableCell className="text-right flex items-center justify-end gap-3">
-          {/* 값 또는 체크박스 */}
-          {value !== null ? (
-            <span className="font-semibold">{value}</span>
-          ) : key === "Bonus" ? (
-            <span className="font-semibold">{bonus}</span>
+      <TableRow key={category}>
+        <TableCell className="align-middle">{CATEGORY_LABELS[category]}</TableCell>
+        <TableCell className="text-right">
+          {savedScore !== null ? (
+            <span className="font-semibold">{savedScore}</span>
           ) : (
-            <Checkbox
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
               disabled={isDisabled}
-              onCheckedChange={(c) => c && handleSelect(key)}
-              aria-label={`${label} 선택`}
-            />
+              onClick={() => onSelectCategory(category)}
+            >
+              {rolledDice ? `${previewScore}점 선택` : '-'}
+            </Button>
           )}
         </TableCell>
       </TableRow>
@@ -185,32 +90,28 @@ export function ScoreTable({
   };
 
   return (
-    <div className="flex-1 overflow-auto border rounded-lg p-2">
+    <div className="flex-1 overflow-auto rounded-lg border p-2">
       <Table className="w-full text-sm">
         <TableBody>
-          {/* Upper Section */}
-          {upperCategories.map((cat) =>
-            renderRow(cat.key, cat.label, scores[cat.key])
-          )}
-          {renderRow("Bonus", "보너스 (+35)", bonus, { auto: true })}
-          <TableRow className="font-semibold bg-muted">
+          {UPPER_CATEGORIES.map(renderCategoryRow)}
+          <TableRow>
+            <TableCell className="align-middle">{CATEGORY_LABELS.Bonus}</TableCell>
+            <TableCell className="text-right font-semibold">{scores.Bonus}</TableCell>
+          </TableRow>
+          <TableRow className="bg-muted font-semibold">
             <TableCell>상단 합계</TableCell>
-            <TableCell className="text-right">{upperTotal + bonus}</TableCell>
+            <TableCell className="text-right">{upperTotal + scores.Bonus}</TableCell>
           </TableRow>
 
-          <TableRow className="h-9"></TableRow>
+          <TableRow className="h-9" />
 
-          {/* Lower Section */}
-          {lowerCategories.map((cat) =>
-            renderRow(cat.key, cat.label, scores[cat.key])
-          )}
-          <TableRow className="font-semibold bg-muted">
+          {LOWER_CATEGORIES.map(renderCategoryRow)}
+          <TableRow className="bg-muted font-semibold">
             <TableCell>하단 합계</TableCell>
             <TableCell className="text-right">{lowerTotal}</TableCell>
           </TableRow>
 
-          {/* Total */}
-          <TableRow className="font-bold bg-accent">
+          <TableRow className="bg-accent font-bold">
             <TableCell>총합</TableCell>
             <TableCell className="text-right">{totalSum}</TableCell>
           </TableRow>

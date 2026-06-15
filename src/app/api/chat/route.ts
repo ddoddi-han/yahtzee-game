@@ -1,19 +1,15 @@
-import { broadcast } from "@/lib/roomBus";
+import { NextResponse } from 'next/server';
+import { jsonError } from '@/features/game/server/api-response';
+import { sendChatInputSchema } from '@/features/game/server/api-schemas';
+import { sendChat } from '@/features/game/server/room-runtime';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  const { room, nick, text } = await req.json();
-  if (!room || !nick || !text) {
-    return new Response("Bad Request", { status: 400 });
+  try {
+    const input = sendChatInputSchema.parse(await req.json());
+    return NextResponse.json(sendChat(input));
+  } catch (error) {
+    return jsonError(error);
   }
-
-  broadcast(room, {
-    type: "chat",
-    nick,
-    text: String(text).slice(0, 2000), // 간단 방어
-    at: Date.now(),
-  });
-
-  return new Response("ok");
 }

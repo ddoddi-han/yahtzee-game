@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import { Button } from "../ui/button";
+import { motion } from 'framer-motion';
+import { Button } from '../ui/button';
 
 const MotionButton = motion.create(Button);
 
@@ -19,7 +19,7 @@ function DiceEye({ value }: { value: number | null }) {
 
   return (
     <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
-      {Array.from({ length: 9 }, (_, i) => i + 1).map((pos) => (
+      {Array.from({ length: 9 }, (_, i) => i + 1).map(pos => (
         <div key={pos} className="flex items-center justify-center">
           {positions[value].includes(pos) && (
             <div className="w-2 h-2 bg-radial-[at_75%_75%] from-white to-black to-25% rounded-full" />
@@ -47,16 +47,12 @@ export function DiceButton({
       disabled={disabled}
       onClick={onClick}
       className={`w-10 h-10 p-1 rounded-xs disabled:opacity-100 inset-shadow-sm inset-shadow-black/25
-        ${
-          isVisible
-            ? "!bg-white hover:!bg-muted-foreground"
-            : "!bg-transparent !border-transparent !shadow-none"
-        }
+        ${isVisible ? '!bg-white hover:!bg-muted-foreground' : '!bg-transparent !border-transparent !shadow-none'}
       `}
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.5 }}
-      transition={{ duration: 0.5, ease: "easeOut" }} // 천천히 나오게
+      transition={{ duration: 0.5, ease: 'easeOut' }} // 천천히 나오게
     >
       {isVisible && <DiceEye value={value} />}
     </MotionButton>

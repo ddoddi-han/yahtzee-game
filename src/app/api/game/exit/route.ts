@@ -1,8 +1,13 @@
-import { NextResponse } from "next/server";
-import { removeClient } from "@/lib/roomBus";
+import { NextResponse } from 'next/server';
+import { jsonError } from '@/features/game/server/api-response';
+import { joinRoomInputSchema } from '@/features/game/server/api-schemas';
+import { markDisconnected } from '@/features/game/server/room-runtime';
 
 export async function POST(req: Request) {
-  const { roomId, nick } = await req.json();
-  removeClient(roomId, nick, true); // immediate = true
-  return NextResponse.json({ success: true });
+  try {
+    const input = joinRoomInputSchema.parse(await req.json());
+    return NextResponse.json(markDisconnected(input.roomId, input.nick));
+  } catch (error) {
+    return jsonError(error);
+  }
 }

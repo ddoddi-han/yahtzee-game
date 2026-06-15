@@ -1,124 +1,75 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import DiceBox from "@drdreo/dice-box-threejs";
-import { toast } from "sonner";
-import { useRoom } from "@/providers/room-provider";
-import { Button } from "./ui/button";
-import { Dices } from "lucide-react";
-import { DiceButton } from "./button/DiceButton";
-import { cn } from "@/lib/utils";
-import { DiceHoverOverlay } from "./DiceOverlay";
-
-// 전역 싱글턴 DiceBox
-let diceBox: DiceBox;
+import { useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
+import { useDiceBoxAdapter } from '@/features/game/client/use-dice-box-adapter';
+import { useGameView, useRoomActions } from '@/providers/room-provider';
+import { Button } from './ui/button';
+import { Dices } from 'lucide-react';
+import { DiceButton } from './button/DiceButton';
+import { cn } from '@/lib/utils';
+import { DiceHoverOverlay } from './DiceOverlay';
 
 export function Dice3D({ disabled }: { disabled: boolean }) {
-  const { nick, roomId, dice, rollsLeft } = useRoom();
-  const boxRef = useRef<DiceBox | null>(null);
+  const { dice, rollsLeft } = useGameView();
+  const actions = useRoomActions();
   const prevRollsLeft = useRef<number>(rollsLeft);
-  const diceIdToIndex = useRef<Record<number, number>>({});
+
+  const toggleFromEngine = useCallback(
+    async (index: number) => {
+      try {
+        const snapshot = await actions.toggleHold(index);
+        return snapshot.dice[index].held;
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '주사위 고정/해제 실패');
+        return false;
+      }
+    },
+    [actions]
+  );
+
+  const diceBox = useDiceBoxAdapter(toggleFromEngine);
+
+  const toggleHold = useCallback(
+    async (index: number) => {
+      try {
+        const snapshot = await actions.toggleHold(index);
+        const updatedDice = snapshot.dice[index];
+        if (!updatedDice.held) await diceBox.restoreDie(index, updatedDice.value);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '주사위 고정/해제 실패');
+      }
+    },
+    [actions, diceBox]
+  );
 
   useEffect(() => {
-    if (!diceBox) {
-      diceBox = new DiceBox("#dice-box", {
-        baseScale: 70,
-        light_intensity: 13,
-        strength: 8,
-        enableDiceSelection: true,
-      });
-
-      diceBox.initialize().then(() => {
-        diceBox.initialized = true;
-        boxRef.current = diceBox;
-      });
-    } else {
-      boxRef.current = diceBox;
-    }
-
-    return () => {};
-  }, []);
-
-  useEffect(() => {
-    const box = boxRef.current;
-    if (!box?.initialized) return;
     if (!dice || dice.length === 0) return;
 
-    // 새 턴 → 주사위 초기화
-    if (rollsLeft === 3) box.clearDice();
+    if (rollsLeft === 3) diceBox.clear();
 
-    // rollsLeft가 변한 경우에만 roll 실행
     if (prevRollsLeft.current !== rollsLeft && rollsLeft < 3) {
       const unheldOriginIdxs = dice.reduce<number[]>((acc, die, idx) => {
         if (!die.held && die.value != null) acc.push(idx);
         return acc;
       }, []);
 
-      const activeValues = unheldOriginIdxs.map((i) => dice[i].value!);
-      if (activeValues.length) {
-        box.roll(`${activeValues.length}dpip@${activeValues.toString()}`);
-        box.onRollComplete = (result) => {
-          const rolledDice = result.sets[0].rolls;
-          rolledDice.forEach((die, i) => {
-            diceIdToIndex.current[die.id] = unheldOriginIdxs[i];
-          });
-        };
-        box.onDiceClick = (diceInfo) => {
-          if (diceInfo.reason === "remove") return;
-
-          const originalIndex = diceIdToIndex.current[diceInfo.id];
-          if (originalIndex === undefined) return;
-
-          toggleHold(originalIndex).then(async () => {
-            await box.remove([diceInfo.id]);
-            delete diceIdToIndex.current[diceInfo.id];
-          });
-        };
-      }
+      const activeValues = unheldOriginIdxs.map(i => dice[i].value!);
+      diceBox.rollValues(activeValues, unheldOriginIdxs);
     }
 
     prevRollsLeft.current = rollsLeft;
-  }, [dice, rollsLeft]);
+  }, [dice, rollsLeft, diceBox]);
 
   const rollDice = async () => {
     if (rollsLeft <= 0) {
-      toast.error("더 이상 굴릴 수 없습니다!");
+      toast.error('더 이상 굴릴 수 없습니다!');
       return;
     }
     try {
-      await fetch("/api/game/roll-dice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, nick }),
-      });
+      await actions.rollDice();
     } catch (err) {
-      console.error("주사위 굴리기 실패:", err);
-      toast.error("주사위 굴리기 실패");
-    }
-  };
-
-  const toggleHold = async (index: number) => {
-    try {
-      const res = await fetch("/api/game/hold-dice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, nick, index }),
-      });
-
-      const data = await res.json();
-      const updatedDice = data.dice;
-
-      if (!updatedDice[index].held) {
-        const addedDice = await boxRef.current?.add(
-          `1dpip@${updatedDice[index].value}`
-        );
-        if (addedDice?.[0]) {
-          diceIdToIndex.current[addedDice[0].id] = index;
-        }
-      }
-    } catch (err) {
-      console.error("주사위 고정/해제 실패:", err);
-      toast.error("주사위 고정/해제 실패");
+      toast.error(err instanceof Error ? err.message : '주사위 굴리기 실패');
     }
   };
 
@@ -143,12 +94,12 @@ export function Dice3D({ disabled }: { disabled: boolean }) {
       </div>
 
       <Button
-        variant={"secondary"}
+        variant={'secondary'}
         className={cn(
-          "text-white font-bold",
+          'text-white font-bold',
           rollsLeft &&
             !disabled &&
-            "bg-linear-to-r/increasing from-red-500 to-rose-500 bg-[length:200%_200%] animate-gradient"
+            'bg-linear-to-r/increasing from-red-500 to-rose-500 bg-[length:200%_200%] animate-gradient'
         )}
         onClick={rollDice}
         disabled={disabled || !rollsLeft}

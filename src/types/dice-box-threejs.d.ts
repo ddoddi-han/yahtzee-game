@@ -1,4 +1,4 @@
-declare module "@drdreo/dice-box-threejs" {
+declare module '@drdreo/dice-box-threejs' {
   export interface DiceConfig {
     assetPath?: string;
     framerate?: number;
@@ -6,9 +6,9 @@ declare module "@drdreo/dice-box-threejs" {
     volume?: number;
     color_spotlight?: number;
     shadows?: boolean;
-    theme_surface?: "green-felt" | "wood-table" | "wood-tray" | "metal";
-    sound_dieMaterial?: "plastic" | "metal" | "wood";
-    theme_customColorset?: any;
+    theme_surface?: 'green-felt' | 'wood-table' | 'wood-tray' | 'metal';
+    sound_dieMaterial?: 'plastic' | 'metal' | 'wood';
+    theme_customColorset?: unknown;
     theme_colorset?: string;
     theme_texture?: string;
     theme_material?: string;
@@ -70,7 +70,7 @@ declare module "@drdreo/dice-box-threejs" {
   }
 
   export class DiceBox {
-    constructor(element_container: string | HTMLElement, options?: Partial);
+    constructor(element_container: string | HTMLElement, options?: Partial<DiceConfig>);
 
     initialized: boolean;
     container: HTMLElement;

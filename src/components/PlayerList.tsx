@@ -1,19 +1,18 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Play, Pause, Loader2Icon } from "lucide-react";
-import { useRoom } from "@/providers/room-provider";
+import * as React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Play, Pause, Loader2Icon } from 'lucide-react';
+import { useGameView, useRoomActions, useRoomSession } from '@/providers/room-provider';
 
 export function PlayerList() {
-  const { roomId, nick: me, users, gameStarted } = useRoom();
+  const { nick: me } = useRoomSession();
+  const { users, gameStarted } = useGameView();
+  const { setReady } = useRoomActions();
   const [loading, setLoading] = React.useState(false);
 
-  const meUser = React.useMemo(
-    () => users.find((u) => u.nick === me),
-    [users, me]
-  );
+  const meUser = React.useMemo(() => users.find(u => u.nick === me), [users, me]);
 
   const meFirstUsers = React.useMemo(() => {
     return [...users].sort((a, b) => {
@@ -29,11 +28,7 @@ export function PlayerList() {
 
     try {
       setLoading(true);
-      await fetch("/api/ready", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room: roomId, nick: me, ready: newReady }),
-      });
+      await setReady(newReady);
     } finally {
       setLoading(false);
     }
@@ -50,29 +45,26 @@ export function PlayerList() {
           const needAttention = isMe && !u.ready && !gameStarted;
 
           return (
-            <div
-              key={u.nick + idx}
-              className="flex justify-between items-center gap-x-2"
-            >
+            <div key={u.nick + idx} className="flex justify-between items-center gap-x-2">
               <div
                 className={`px-2 py-1 rounded-md truncate text-sm ${
                   u.ready || gameStarted
-                    ? "bg-emerald-100 text-emerald-700 font-bold"
-                    : "bg-gray-100 text-gray-700"
+                    ? 'bg-emerald-100 text-emerald-700 font-bold'
+                    : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {(u.ready || gameStarted) && "✅"} {u.nick}
+                {(u.ready || gameStarted) && '✅'} {u.nick}
               </div>
 
-              <div className={needAttention ? "animate-wiggle" : ""}>
+              <div className={needAttention ? 'animate-wiggle' : ''}>
                 <Button
-                  variant={isMe ? "secondary" : "ghost"}
+                  variant={isMe ? 'secondary' : 'ghost'}
                   onClick={toggleReady}
                   disabled={u.nick !== me || loading || gameStarted}
                   className={
                     needAttention
-                      ? "bg-gradient-to-r from-green-600 via-indigo-500 to-green-600 bg-[length:200%_200%] animate-gradient text-white"
-                      : "text-white"
+                      ? 'bg-gradient-to-r from-green-600 via-indigo-500 to-green-600 bg-[length:200%_200%] animate-gradient text-white'
+                      : 'text-white'
                   }
                 >
                   {u.ready || gameStarted ? (
@@ -82,7 +74,7 @@ export function PlayerList() {
                   ) : (
                     <Play />
                   )}
-                  {u.ready || gameStarted ? "준비 취소" : "준비"}
+                  {gameStarted ? '게임 중' : u.ready ? '준비 완료' : '준비'}
                 </Button>
               </div>
             </div>
